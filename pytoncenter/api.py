@@ -5,6 +5,7 @@ import aiohttp
 import asyncio
 from .types import *
 import warnings
+import uuid
 
 class TonException(Exception):
     def __init__(self, code: int):
@@ -85,11 +86,6 @@ class AsyncTonCenterClient:
     async def get_extended_address_information(self, address: str) -> ExtentedAddressInformation:
         return await self._async_get("getExtendedAddressInformation", {"address": address})
 
-    async def get_transactions(self, address: str, limit: Optional[int] = None, lt: Optional[int]=None, hash: Optional[str]=None, to_lt: Optional[int]=0, archival: bool=False) -> List[Tx]:
-        assert limit is None or limit <= 100, "Limit must be less than or equal to 100"
-        assert (lt != 0 and hash != "") or (lt == 0 and hash == ""), "lt and hash must be specified together"
-        return await self._async_get("getTransactions", {"address": address, "limit": limit, "lt": lt, "hash": hash, "to_lt": to_lt, "archival": int(archival)})
-
     async def get_wallet_information(self, address: str) -> WalletInformation:
         return await self._async_get("getWalletInformation", {"address": address})
 
@@ -118,6 +114,73 @@ class AsyncTonCenterClient:
     async def detect_address(self, address: str) -> DetectAddressResult:
         return await self._async_get("detectAddress", {"address": address})
 
+    async def get_masterchain_info(self):
+        return await self._async_get("getMasterchainInfo")
+
+    async def get_masterchain_block_signatures(self, seq_no: int):
+        return await self._async_get("getMasterchainBlockSignatures", {"seq_no": seq_no})
+    
+    async def get_shard_block_proof(self, workchain:int, shard:int, seqno:int, from_seqno: Optional[int]=None):
+        query = {"workchain": workchain, "shard": shard, "seqno": seqno}
+        if from_seqno is not None:
+            query["from_seqno"] = from_seqno
+        return await self._async_get("getShardBlockProof", query=query)
+    
+    async def get_consensus_block(self):
+        return await self._async_get("getConsensusBlock")
+    
+    async def lookup_block(self, workchain:int, shard:int, seqno: Optional[int]=None, lt: Optional[int]=None, unixtime: Optional[int]=None):
+        query = {"workchain": workchain, "shard": shard}
+        if seqno is not None:
+            query["seqno"] = seqno
+        if lt is not None:
+            query["lt"] = lt
+        if unixtime is not None:
+            query["unixtime"] = unixtime
+        return await self._async_get("lookupBlock", query=query)
+    
+    async def shards(self, seqno: int):
+        return await self._async_get("shards", {"seqno": seqno})
+    
+    async def get_block_transactions(self, workchain:int, shard:int, seqno:int, root_hash: Optional[str]=None, file_hash: Optional[str]=None, after_lt: Optional[int]=None, after_hash: Optional[str]=None, count: Optional[int]=None):
+        query = {"workchain": workchain, "shard": shard, "seqno": seqno}
+        if root_hash is not None:
+            query["root_hash"] = root_hash
+        if file_hash is not None:
+            query["file_hash"] = file_hash
+        if after_lt is not None:
+            query["after_lt"] = after_lt
+        if after_hash is not None:
+            query["after_hash"] = after_hash
+        if count is not None:
+            query["count"] = count
+        return await self._async_get("getBlockTransactions", query=query)
+        
+    async def get_block_header(self, workchain:int, shard:int, seqno:int, root_hash: Optional[str]=None, file_hash: Optional[str]=None):
+        query = {"workchain": workchain, "shard": shard, "seqno": seqno}
+        if root_hash is not None:
+            query["root_hash"] = root_hash
+        if file_hash is not None:
+            query["file_hash"] = file_hash
+        return await self._async_get("getBlockHeader", query=query)
+
+    async def get_transactions(self, address: str, limit: Optional[int] = None, lt: Optional[int]=None, hash: Optional[str]=None, to_lt: Optional[int]=0, archival: bool=False) -> List[Tx]:
+        assert limit is None or limit <= 100, "Limit must be less than or equal to 100"
+        assert (lt != 0 and hash != "") or (lt == 0 and hash == ""), "lt and hash must be specified together"
+        return await self._async_get("getTransactions", {"address": address, "limit": limit, "lt": lt, "hash": hash, "to_lt": to_lt, "archival": int(archival)})
+
+    async def try_locate_tx(self, source:str, destination:str, created_lt:int):
+        return await self._async_get("tryLocateTx", {"source": source, "destination": destination, "created_lt": created_lt})
+    
+    async def try_locate_result_tx(self, source:str, destination:str, created_lt:int):
+        return await self._async_get("tryLocateResultTx", {"source": source, "destination": destination, "created_lt": created_lt})
+    
+    async def try_locate_source_tx(self, source:str, destination:str, created_lt:int):
+        return await self._async_get("tryLocateSourceTx", {"source": source, "destination": destination, "created_lt": created_lt})
+
+    async def get_config_param(self, config_id:int, seqno: Optional[int] = None):
+        return await self._async_get("getConfigParam", {"config_id": config_id, "seqno": seqno})
+
     async def run_get_method(self, address: str, method_name: str, params: OrderedDict[str, Any]):
         # serialize params into List[List[param name, param value]]
         stack = self._serialize(params)
@@ -135,10 +198,17 @@ class AsyncTonCenterClient:
         boc = message.to_boc()
         return await self._async_post("sendBocReturnHash", {"boc": boc})
 
+    async def send_query(self, address:str, body: str, init_code:str, init_data:str):
+        return await self._async_post("sendQuery", {"address": address, "body": body, "init_code": init_code, "init_data": init_data})
+
     async def estimate_fee(self, address:str, body:Union[str, Cell], init_code: str, init_data:str, ignore_chksig:bool=True) -> EstimateResult:
         if isinstance(body, Cell):
             body = body.to_boc()
         return await self._async_post("estimateFee", {"address": address, "body": body, "init_code": init_code, "init_data": init_data, "ignore_chksig": int(ignore_chksig)})
+
+    async def json_rpc(self, method:str, params:Dict[str, Any], id:Optional[int]=None, jsonrpc:Optional[str]="2.0"):
+        id = uuid.uuid4().int if id is None else id
+        return await self._async_post("jsonRpc", {"method": method, "params": params, "id": id, "jsonrpc": jsonrpc})
 
     async def execute_many(self, *coros: Union[Coroutine, List[Coroutine], Dict[str, Coroutine]]):
         """
@@ -158,8 +228,8 @@ class AsyncTonCenterClient:
         ```
         client = AsyncTonCenterClient(network="testnet")
         result = await client.execute(
-            "address1": client.get_address_balance("address1"),
-            "address2": client.run_get_method("kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A", "get_jetton_data", {})
+            client.get_address_balance("address1"),
+            client.run_get_method("kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A", "get_jetton_data", {})
         )
         print(result)
         ```
