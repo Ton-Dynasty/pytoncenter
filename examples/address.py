@@ -4,7 +4,11 @@ from pytoncenter import AsyncTonCenterClient
 
 
 async def main():
-    test_address_str = "EQAuVtH68PRkM8qsMUh670ecNZPtqs5bANF3MD4dv-eBb2vD"
+    raw_address_str = (
+        "0:2e56d1faf0f46433caac31487aef479c3593edaace5b00d177303e1dbfe7816f"
+    )
+    friendly_address_str = "EQAuVtH68PRkM8qsMUh670ecNZPtqs5bANF3MD4dv-eBb2vD"
+    test_address_str = friendly_address_str
     addr = Address(test_address_str)
 
     client = AsyncTonCenterClient(network="mainnet")
@@ -35,6 +39,10 @@ async def main():
     if result["given_type"] == "friendly_bounceable":
         assert addr.is_user_friendly == True, "User friendly mismatch!"
         assert addr.is_bounceable == True, "Bounceable mismatch!"
+
+    if result["given_type"] == "raw_form":
+        assert addr.is_user_friendly == False, "User friendly mismatch!"
+        assert addr.is_bounceable == False, "Bounceable mismatch!"
 
     if (
         test_address_str == result["bounceable"]["b64"]
