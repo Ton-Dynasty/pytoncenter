@@ -1,4 +1,5 @@
 from .api import AsyncTonCenterClient
+from .address import Address
 from .types import (
     AccountAddress,
     AccountState,
@@ -23,6 +24,7 @@ from .types import (
 
 __all__ = [
     "AsyncTonCenterClient",
+    "Address",
     "AccountAddress",
     "AccountState",
     "BlockID",
