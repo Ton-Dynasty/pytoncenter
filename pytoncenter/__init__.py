@@ -1,6 +1,6 @@
 from .api import AsyncTonCenterClient
 from .types import (
-    Address,
+    AccountAddress,
     AccountState,
     BlockID,
     TransactionID,
@@ -23,7 +23,7 @@ from .types import (
 
 __all__ = [
     "AsyncTonCenterClient",
-    "Address",
+    "AccountAddress",
     "AccountState",
     "BlockID",
     "TransactionID",
