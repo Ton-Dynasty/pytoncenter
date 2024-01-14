@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "pytoncenter"
+version = "0.0.1"
+description = ""
+authors = ["alan890104 <alan890104@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
+tonpy = "^0.0.0.1.2b0"
+aiohttp = "^3.9.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
