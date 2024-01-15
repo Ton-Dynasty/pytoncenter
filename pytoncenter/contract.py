@@ -1,11 +1,11 @@
 from enum import Enum
 from tonpy import begin_cell, Cell, CellBuilder
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, TypedDict, Union
+from typing import Optional, List, TypedDict, Union, Tuple
 from .address import Address
 from .utils import sign_message
+from .crypto import mnemonic_to_wallet_key, mnemonic_is_valid
 import time
-
 
 class StateInit(TypedDict):
     code: Cell
@@ -341,3 +341,32 @@ class WalletContractV4R2(WalletContractV4):
         super().__init__(**kwargs)
         if "wallet_id" not in kwargs:
             self.options["wallet_id"] = 698983191 + self.options["wc"]
+
+
+
+class WalletVersionEnum(Enum):
+    v2r1 = 'v2r1'
+    v2r2 = 'v2r2'
+    v3r1 = 'v3r1'
+    v3r2 = 'v3r2'
+    v4r1 = 'v4r1'
+    v4r2 = 'v4r2'
+    hv2 = 'hv2'
+
+class Wallet:
+    @classmethod
+    def from_mnemonics(cls, mnemonics: List[str], version: WalletVersionEnum = WalletVersionEnum.v4r2,
+                       workchain: int = 0, **kwargs) -> Tuple[List[str], bytes, bytes, WalletContract]:
+        """
+        :rtype: (List[str](mnemonics), bytes(public_key), bytes(private_key), WalletContract(wallet))
+        """
+        assert version == WalletVersionEnum.v4r2, "only v4r2 version is supported"
+        assert isinstance(mnemonics, list), "mnemonics must be list"
+        if not mnemonic_is_valid(mnemonics):
+            raise ValueError("mnemonics is not valid")
+
+        pub_k, priv_k = mnemonic_to_wallet_key(mnemonics)
+        wallet = cls.ALL[version](
+            public_key=pub_k, private_key=priv_k, wc=workchain, **kwargs)
+
+        return mnemonics, pub_k, priv_k, wallet
