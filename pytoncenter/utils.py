@@ -1,5 +1,9 @@
 import ctypes
 import math
+import nacl
+from nacl.bindings import crypto_sign, crypto_sign_BYTES
+from nacl.signing import SignedMessage
+from nacl.encoding import Encoder, RawEncoder
 
 
 def string_to_bytes(string, size=1):  # ?
@@ -34,3 +38,15 @@ def crc16(data):
                 reg ^= POLY
 
     return bytearray([math.floor(reg / 256), reg % 256])
+
+
+def sign_message(message: bytes,
+                 signing_key: bytes,
+                 encoder: Encoder = RawEncoder, ) -> SignedMessage:
+    raw_signed = crypto_sign(message, signing_key)
+
+    signature = encoder.encode(raw_signed[:crypto_sign_BYTES])
+    message = encoder.encode(raw_signed[crypto_sign_BYTES:])
+    signed = encoder.encode(raw_signed)
+
+    return SignedMessage._from_parts(signature, message, signed)

@@ -3,6 +3,7 @@ from tonpy import begin_cell, Cell, CellBuilder
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, TypedDict, Union
 from .address import Address
+from .utils import sign_message
 import time
 
 
@@ -20,6 +21,15 @@ class ExternalMessage(TypedDict):
     code: Cell
     data: Cell
 
+
+class ExternalMessageWithSigningMessage(TypedDict):
+    address: Address
+    message: Cell
+    body: Cell
+    signing_message: Cell
+    state_init: Cell
+    code: Cell
+    data: Cell
 
 class ExternalMessageWithSignature(TypedDict):
     address: Address
@@ -158,13 +168,16 @@ class Contract(ABC):
         common_msg_info.store_builder(header)
         if state_init:
             common_msg_info.store_bool(True)
-            # TODO: get free bits
+            common_msg_info.store_ones(1)
+            common_msg_info.store_ref(state_init)
         else:
             common_msg_info.store_bool(False)
 
         # Body part
         if body:
-            pass
+            common_msg_info.store_bool(True)
+            common_msg_info.store_ones(1)
+            common_msg_info.store_ref(body)
         else:
             common_msg_info.store_bool(False)
 
@@ -201,7 +214,9 @@ class WalletContract(Contract):
         super().__init__(**kwargs)
 
     @staticmethod
-    def from_keypair(public_key: str, private_key: str, **kwargs):
+    def from_keypair(public_key: bytes, private_key: bytes, **kwargs):
+        assert isinstance(public_key, bytes), "public_key must be bytes"
+        assert isinstance(private_key, bytes), "private_key must be bytes"
         kwargs["public_key"] = public_key
         kwargs["private_key"] = private_key
         return WalletContract(**kwargs)
@@ -214,7 +229,7 @@ class WalletContract(Contract):
     def get_data_cell(self) -> Cell:
         cell = begin_cell()
         cell.store_uint(0, 32)
-        cell.store_bitstring(self.options["public_key"])
+        cell.store_bitstring(to_bitstring(self.options["public_key"]))
         return cell.end_cell()
     
     @abstractmethod
@@ -238,11 +253,59 @@ class WalletContract(Contract):
         signing_message.store_builder(order)
         return self.create_external_message(signing_message, seqno, dummy_signature)
         
-    def create_external_message(self, signing_message: Cell, seqno: int, dummy_signature: bool = False) -> ExternalMessageWithSignature:
-        raise NotImplementedError
+    def create_external_message(self, signing_message: CellBuilder, seqno: int, dummy_signature: bool = False) -> ExternalMessageWithSignature:
+        signature = bytes(64) if dummy_signature else sign_message(bytes(signing_message.get_hash()), self.options["private_key"])
+        body = begin_cell()
+        body.store_bitstring(to_bitstring(signature))
+        body.store_builder(signing_message)
+        state_init = None
+        code = None
+        data = None
+        if seqno == 0:
+            deploy = self.create_state_init()
+            state_init = deploy["state_init"]
+            code = deploy["code"]
+            data = deploy["data"]
+            
+        header = Contract.create_external_message_header(self.address)
+        result_msg = Contract.create_common_msg_info(header, state_init, body)
+        return {
+            "address": self.address,
+            "message": result_msg,
+            "body": body.end_cell(),
+            "signature": signature,
+            "signing_message": signing_message.end_cell(),
+            "state_init": state_init,
+            "code": code,
+            "data": data,
+        }
     
-    def create_init_external_message(self) -> ExternalMessage:
-        raise NotImplementedError
+    def create_init_external_message(self) -> ExternalMessageWithSigningMessage:
+        create_state_init = self.create_state_init()
+        state_init = create_state_init["state_init"]
+        address = create_state_init["address"]
+        code = create_state_init["code"]
+        data = create_state_init["data"]
+        
+        signing_msg = self.create_signing_message()
+        signature = sign_message(bytes(signing_msg.get_hash()), self.options["private_key"])
+        
+        body = begin_cell()
+        body.store_bitstring(to_bitstring(signature))
+        body.store_builder(signing_msg)
+        
+        header = Contract.create_external_message_header(address)
+        external_msg = Contract.create_common_msg_info(header, state_init, body)
+        
+        return {
+            "address": address,
+            "message": external_msg,
+            "body": body.end_cell(),
+            "signing_message": signing_msg.end_cell(),
+            "state_init": state_init,  
+            "code": code,
+            "data": data,
+        }
 
 
 class WalletContractV4(WalletContract):
@@ -251,7 +314,7 @@ class WalletContractV4(WalletContract):
         cell.store_uint(0, 32)
         cell.store_uint(self.options["wallet_id"], 32)
         # store public key
-        cell.store_bitstring(self.options["public_key"])
+        cell.store_bitstring(to_bitstring(self.options["public_key"]))
         cell.store_uint(0, 1) # empty plugin dict
         return cell.end_cell()
     
