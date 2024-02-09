@@ -1,6 +1,5 @@
 from pytoncenter import AsyncTonCenterClient, Tx
 import asyncio
-from pathlib import Path
 import json
 from pytoncenter.debug import pretty_print_trace_tx, create_named_mapping_func
 

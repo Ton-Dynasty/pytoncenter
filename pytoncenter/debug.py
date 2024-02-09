@@ -84,17 +84,18 @@ def pretty_print_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = default
     print transaction trace in a pretty way
     """
 
-    def recursive_add_tx(tree: Tree, tx: TraceTx, level: int = 0):
+    def recursive_add_tx(tree: Tree, tx: TraceTx, parent: Optional[Node] = None):
         """
         Recursively add node to the tree
         """
+        txhash = tx["transaction_id"]["hash"]
         tree.create_node(
-            identifier=level,
+            identifier=txhash,
             tag=format_trace_tx(tx, named_func),
-            parent=level - 1 if level > 0 else None,
+            parent=parent,
         )
         for child in tx["children"]:
-            recursive_add_tx(tree, child, level + 1)
+            recursive_add_tx(tree, child, txhash)
 
     tree = Tree()
     recursive_add_tx(tree, trace_tx)
