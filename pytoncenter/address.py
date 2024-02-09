@@ -1,9 +1,20 @@
 from .utils import crc16, string_to_bytes
 import base64
 import ctypes
+from typing import TypedDict
+
+AddressInfo = TypedDict(
+    "AddressInfo",
+    {
+        "is_test_only": bool,
+        "is_bounceable": bool,
+        "workchain": int,
+        "hash_part": bytearray,
+    },
+)
 
 
-def parse_friendly_address(addr_str):
+def parse_friendly_address(addr_str: str) -> AddressInfo:
     if len(addr_str) != 48:
         raise Exception("User-friendly address should contain strictly 48 characters")
 
@@ -131,10 +142,10 @@ class Address:
 
     def to_string(
         self,
-        is_user_friendly=None,
-        is_url_safe=None,
-        is_bounceable=None,
-        is_test_only=None,
+        is_user_friendly: bool = None,
+        is_url_safe: bool = None,
+        is_bounceable: bool = None,
+        is_test_only: bool = None,
     ) -> str:
         if is_user_friendly is None:
             is_user_friendly = self._is_user_friendly
@@ -148,9 +159,7 @@ class Address:
         if not is_user_friendly:
             return f"{self._wc}:{self._hash_part.hex()}"
         else:
-            tag = (
-                Address.BOUNCEABLE_TAG if is_bounceable else Address.NON_BOUNCEABLE_TAG
-            )
+            tag = Address.BOUNCEABLE_TAG if is_bounceable else Address.NON_BOUNCEABLE_TAG
 
             if is_test_only:
                 tag |= Address.TEST_FLAG
@@ -168,3 +177,14 @@ class Address:
                 address_base_64 = address_base_64.replace("+", "-").replace("/", "_")
 
             return str(address_base_64)
+
+    def __hash__(self) -> int:
+        return hash(self.to_string(True, True, True, is_test_only=False))
+
+    def __key__(self) -> str:
+        return self.to_string(True, True, True, is_test_only=False)
+
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, Address):
+            return False
+        return self.to_string(True, True, True, is_test_only=False) == __value.to_string(True, True, True, is_test_only=False)

@@ -1,7 +1,8 @@
-from pytoncenter import AsyncTonCenterClient, Tx
+from pytoncenter import AsyncTonCenterClient, Address
 import asyncio
 import json
 from pytoncenter.debug import pretty_print_trace_tx, create_named_mapping_func
+
 
 """
 # Subscribe Address
@@ -28,10 +29,13 @@ async def main():
     result = await client.trace_tx(tx)
     with open("tx_trace.json", "w") as f:
         json.dump(result, f, indent=2)
+
+    # Pretty print transaction trace with any formed of address mapping
     named_func = create_named_mapping_func(
         {
-            "EQC8zFHM8LCMp9Xs--w3g9wmf7RwuDgJcQtV-oHZRSCqQZ__": "Alan WalletV4R2",
-            "EQAreQ23eabjRO5glLCbhZ4KxQ9SOIjtw2eM2PuEXXhIZVP9": "Jetton Master",
+            Address("EQC8zFHM8LCMp9Xs--w3g9wmf7RwuDgJcQtV-oHZRSCqQZ__"): "Alan WalletV4R2",
+            Address("0:2b790db779a6e344ee6094b09b859e0ac50f523888edc3678cd8fb845d784865"): "Jetton Master",
+            Address("kQC40ScRg9_1ob5sjWsdScltrCGu0HARsUnOYQ1esc12588C"): "Jetton Wallet",
         },
         truncate_address=True,
     )

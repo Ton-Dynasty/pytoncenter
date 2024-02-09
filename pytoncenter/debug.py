@@ -2,6 +2,7 @@ from .types import TraceTx
 from typing import Callable, Optional, Dict
 from treelib import Node, Tree
 from tonpy import CellSlice
+from .address import Address
 
 __all__ = [
     "create_named_mapping_func",
@@ -13,14 +14,15 @@ __all__ = [
 NamedFunction = Callable[[str], Optional[str]]
 
 
-def truncateMiddlePart(address: str, prefix: int, suffix: int) -> Optional[str]:
+def truncateMiddlePart(address: Address, prefix: int, suffix: int) -> Optional[str]:
     """
     Truncate middle part of the address to make it more readable
     """
+    address = address.to_string(True, is_test_only=False)
     return address[:prefix] + "..." + address[-suffix:] if len(address) > prefix + suffix else address
 
 
-def defaultNamedFunction(address: str, **kwargs) -> Optional[str]:
+def defaultNamedFunction(address: Address, **kwargs) -> Optional[str]:
     """
     Truncate middle part of the address to make it more readable
 
@@ -43,8 +45,10 @@ def format_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = defaultNamedF
     Format transaction trace in a pretty way
     A -> B (Value, Opcode)
     """
-    src = trace_tx.get("in_msg", {}).get("source", "")
-    dest = trace_tx.get("in_msg", {}).get("destination", "")
+    raw_src = trace_tx.get("in_msg", {}).get("source", "")
+    raw_dst = trace_tx.get("in_msg", {}).get("destination", "")
+    src = Address(raw_src)
+    dst = Address(raw_dst)
     value = int(trace_tx.get("in_msg", {}).get("value", "0")) / 1e9
     opcode = "invalid opcode"
     in_msg_data = trace_tx.get("in_msg", {}).get("msg_data", {})
@@ -55,25 +59,25 @@ def format_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = defaultNamedF
         opcode = str(hex(cs.load_uint(32))).lower()
     return "{src} -> {dest} ({opcode}) [{value} TON]".format(
         src=named_func(src),
-        dest=named_func(dest),
+        dest=named_func(dst),
         value=value,
         opcode=opcode,
     )
 
 
-def create_named_mapping_func(mapping: Dict[str, str], truncate_address: bool = True) -> NamedFunction:
+def create_named_mapping_func(mapping: Dict[Address, str], truncate_address: bool = True) -> NamedFunction:
     """
     create a named function to map address to a more readable format
-    For example, you can map address 0x1234567890abcdef to "Alice" using this function
+    For example, you can map address EQAuVtH68PRkM8qsMUh670ecNZPtqs5bANF3MD4dv-eBb2vD to "Alice" using this function
     if the address is not in the mapping, it will return the original address by default
     the original address can be truncated if truncate_address is True
     """
 
-    def namedFunction(address: str) -> Optional[str]:
+    def namedFunction(address: Address) -> Optional[str]:
         """
         Truncate middle part of the address to make it more readable
         """
-        default = truncateMiddlePart(address, 6, 6) if truncate_address else address
+        default = truncateMiddlePart(address, 6, 6) if truncate_address else address.to_string(True, is_test_only=False)
         return mapping.get(address, default)
 
     return namedFunction
