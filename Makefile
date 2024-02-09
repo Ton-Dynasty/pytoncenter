@@ -1,0 +1,2 @@
+bump:
+	poetry version patch

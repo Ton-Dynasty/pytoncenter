@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pytoncenter"
-version = "0.0.2"
+version = "0.0.3"
 description = ""
 authors = ["alan890104 <alan890104@gmail.com>"]
 readme = "README.md"
@@ -16,3 +16,5 @@ treelib = "^1.7.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry_bumpversion.file."pytoncenter/__init__.py"]
