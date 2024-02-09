@@ -48,6 +48,14 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+You may get the following output in the console:
+
+```bash
+Alan WalletV4R2 -> Jetton Master (Mint:1) [1.0 TON]
+└── Jetton Master -> Jetton Wallet (0x178d4519) [0.955002 TON]
+    └── Jetton Wallet -> Alan WalletV4R2 (0xd53276db) [0.853806 TON]
+```
+
 
 
 ## Full Examples
