@@ -52,6 +52,8 @@ jobs:
       #              run test suite
       #----------------------------------------------
       - name: Run tests
+        env:
+          TONCENTER_API_KEY: ${{ secrets.TONCENTER_API_KEY }}
         run: |
           source .venv/bin/activate
           pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=pytoncenter tests/**
