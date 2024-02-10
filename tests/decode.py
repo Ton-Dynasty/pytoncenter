@@ -6,13 +6,6 @@ import asyncio
 pytest_plugins = ("pytest_asyncio",)
 
 
-@pytest.fixture(autouse=True)
-@pytest.mark.asyncio
-async def slow_down_tests():
-    yield
-    await asyncio.sleep(1)
-
-
 class TestDecoder:
     client: AsyncTonCenterClient
 

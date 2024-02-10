@@ -1,8 +1,6 @@
 import pytest
-from pytoncenter import Address, AsyncTonCenterClient, TraceTx
-from pytoncenter.decoder import JettonDataDecoder, Field, Decoder
+from pytoncenter import Address, AsyncTonCenterClient
 from pytoncenter.debug import pretty_print_trace_tx, create_named_mapping_func
-from asyncio import sleep
 
 pytest_plugins = ("pytest_asyncio",)
 
