@@ -3,6 +3,7 @@ from typing import Callable, Optional, Dict
 from treelib import Node, Tree
 from tonpy import CellSlice
 from .address import Address
+from .utils import get_opcode
 
 __all__ = [
     "NamedFunction",
@@ -58,7 +59,7 @@ def format_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = defaultNamedF
         opcode = trace_tx.get("in_msg", {}).get("message")
     elif in_msg_data.get("@type") == "msg.dataRaw":
         cs = CellSlice(in_msg_data.get("body"))
-        opcode = str(hex(cs.load_uint(32))).lower()
+        opcode = get_opcode(cs.load_uint(32))
     return "{src} -> {dest} ({opcode}) [{value} TON]".format(
         src=named_func(src),
         dest=named_func(dst),
