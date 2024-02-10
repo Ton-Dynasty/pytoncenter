@@ -5,6 +5,8 @@ from tonpy import CellSlice
 from .address import Address
 
 __all__ = [
+    "NamedFunction",
+    "truncateMiddlePart",
     "create_named_mapping_func",
     "defaultNamedFunction",
     "format_trace_tx",
@@ -14,7 +16,7 @@ __all__ = [
 NamedFunction = Callable[[str], Optional[str]]
 
 
-def truncateMiddlePart(address: Address, prefix: int, suffix: int) -> Optional[str]:
+def truncateMiddlePart(address: Address, prefix: int, suffix: int) -> str:
     """
     Truncate middle part of the address to make it more readable
     """

@@ -1,4 +1,4 @@
-from typing import List, Literal, TypedDict, Union
+from typing import List, Literal, TypedDict, Union, Dict, Any
 
 AccountAddress = TypedDict("AccountAddress", {"@type": Literal["accountAddress"], "account_address": str})
 AccountState = TypedDict("AccountState", {"@type": Literal["raw.accountState"], "code": str, "data": str, "frozen_hash": str})
@@ -94,3 +94,4 @@ TraceTx = TypedDict(
         "children": List["TraceTx"],
     },
 )
+GetMethodResult = List[Dict[Literal["type", "value"], Union[str, Dict[str, Any]]]]

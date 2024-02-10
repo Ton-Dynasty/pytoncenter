@@ -57,9 +57,10 @@ Alan WalletV4R2 -> Jetton Master (Mint:1) [1.0 TON]
 ```
 
 
-
 ## Full Examples
-1. [Get transaction flows](./examples/transaction_flows.py)
-2. [Execute Parallelly](./examples/execute_many.py)
-3. [Subscribe transactions for address](./examples/subscribe.py)
-4. [Address Parser](./examples/address.py)
+1. [Get Transaction Flows](./examples/transaction_flows.py)
+2. [Decode Jetton Get Method Result](./examples/decode_jetton_data.py)
+3. [Decode Custom Get Method Result](./examples/decode_custom_data.py)
+4. [Execute Parallelly](./examples/execute_many.py)
+5. [Subscribe transactions for address](./examples/subscribe.py)
+6. [Address Parser](./examples/address.py)
