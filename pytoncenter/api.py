@@ -1,6 +1,6 @@
 import os
 from tonpy import Cell
-from typing import Dict, List, Optional, Union, Literal, Tuple, TypedDict, Coroutine, Iterable, OrderedDict, Any
+from typing import Dict, List, Optional, Union, Literal, Tuple, Coroutine, Iterable, OrderedDict, Any
 import aiohttp
 import asyncio
 from .types import *
@@ -41,9 +41,6 @@ class AsyncTonCenterClient:
 
     def _serialize(self, params: OrderedDict[str, str]) -> List[Tuple[str, Any]]:
         return [(k, v) for k, v in params.items()]
-
-    def _deserialize(self, stack: List[Tuple[str, Any]]) -> OrderedDict[str, str]:
-        return OrderedDict(stack)
 
     async def _parse_response(self, response: aiohttp.ClientResponse):
         """
@@ -196,12 +193,13 @@ class AsyncTonCenterClient:
     async def get_config_param(self, config_id: int, seqno: Optional[int] = None):
         return await self._async_get("getConfigParam", {"config_id": config_id, "seqno": seqno})
 
-    async def run_get_method(self, address: str, method_name: str, params: OrderedDict[str, Any]):
+    async def run_get_method(self, address: str, method_name: str, params: OrderedDict[str, Any]) -> GetMethodResult:
         # serialize params into List[List[param name, param value]]
         stack = self._serialize(params)
         result = await self._async_post("runGetMethod", {"address": address, "method": method_name, "stack": stack})
         if result.get("@type") == "smc.runResult" and "stack" in result:
-            return self._deserialize(result["stack"])
+            r: Dict[str, Any] = result["stack"]
+            return [{"type": r[i][0], "value": r[i][1]} for i in range(len(r))]
         raise ValueError(f"Invalid get method result: {result}")
 
     async def send_boc(self, boc: str):
@@ -273,7 +271,7 @@ class AsyncTonCenterClient:
             tasks = [asyncio.create_task(coro) for coro in coros]
             return await asyncio.gather(*tasks)
 
-    async def subscribeTx(self, address: str, interval: int = 1):
+    async def subscribeTx(self, address: str, interval_in_second: float = 1.0, init_cur_lt: Optional[int] = None):
         """
         subscribeTx returns a generator that yields transactions of the address
 
@@ -281,25 +279,36 @@ class AsyncTonCenterClient:
         ----------
         address : str
             The address to subscribe to
-        interval : int, optional
-            The interval to poll the TonCenter API, by default 1 second
+        interval_in_second : float
+            The interval_in_second to poll the TonCenter API, by default 1 second
 
         Yields
         ------
         Tx
             The transaction of the address
         """
-        cur_lt = None
+        cur_lt = init_cur_lt
         while True:
-            results = await self.get_transactions(address, limit=1 if cur_lt == None else 10, to_lt=cur_lt or 0, archival=True)
+            results = await self.get_transactions(address, limit=1 if cur_lt == None else 10, to_lt=0, archival=True)
             if not results:
-                await asyncio.sleep(interval)
+                await asyncio.sleep(interval_in_second)
                 continue
             cur_lt = results[-1]["transaction_id"]["lt"]
             for tx in results:
                 yield tx
 
     async def trace_tx(self, root_tx: Tx) -> TraceTx:
+        """
+        trace_tx traces the transaction and its children transactions
+        
+        Example
+        -------
+        ```
+        client = AsyncTonCenterClient(network="testnet")
+        txs = await client.get_transactions("kQAreQ23eabjRO5glLCbhZ4KxQ9SOIjtw2eM2PuEXXhIZeh3", limit=1)
+        trace = await client.trace_tx(txs[0])
+        pprint(trace)
+        """
         async def get_children_tx(source: str, destination: str, created_lt: int) -> Optional[TraceTx]:
             try:
                 _tx = await self.try_locate_tx(source=source, destination=destination, created_lt=created_lt)

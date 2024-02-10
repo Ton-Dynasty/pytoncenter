@@ -188,3 +188,6 @@ class Address:
         if not isinstance(__value, Address):
             return False
         return self.to_string(True, True, True, is_test_only=False) == __value.to_string(True, True, True, is_test_only=False)
+
+    def __repr__(self) -> str:
+        return self.to_string(True, True, True, is_test_only=False)
