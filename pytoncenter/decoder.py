@@ -1,5 +1,5 @@
 from .types import GetMethodResult
-from typing import Dict, Any, OrderedDict
+from typing import Dict, Any, OrderedDict, TypedDict
 from abc import abstractmethod
 from .address import Address
 from tonpy import CellSlice
@@ -61,6 +61,18 @@ class Decoder(BaseDecoder):
         return OrderedDict((field.name, field.decode(data[i]["value"])) for i, field in enumerate(self._fields))
 
 
+JettonDataDict = TypedDict(
+    "JettonData",
+    {
+        "total_supply": int,
+        "mintable": bool,
+        "admin_address": Address,
+        "jetton_content": str,
+        "jetton_wallet_code": str,
+    },
+)
+
+
 class JettonDataDecoder(BaseDecoder):
     """
     JettonDataDecoder is a singleton class that decodes the result of the get_jetton_data method
@@ -80,5 +92,5 @@ class JettonDataDecoder(BaseDecoder):
             cls._instance = super(JettonDataDecoder, cls).__new__(cls)
         return cls._instance
 
-    def decode(self, data: GetMethodResult) -> Dict[str, Any]:
+    def decode(self, data: GetMethodResult) -> JettonDataDict:
         return self.decoder.decode(data)

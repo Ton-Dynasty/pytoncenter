@@ -7,7 +7,8 @@ from pprint import pprint
 async def main():
     client = AsyncTonCenterClient(network="testnet")
     result = await client.run_get_method("kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A", "get_jetton_data", {})
-    output = JettonDataDecoder.decode(result)
+    decoder = JettonDataDecoder()
+    output = decoder.decode(result)
     pprint(output, width=120)
 
 

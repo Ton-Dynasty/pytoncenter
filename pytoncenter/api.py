@@ -1,6 +1,6 @@
 import os
 from tonpy import Cell
-from typing import Dict, List, Optional, Union, Literal, Tuple, Coroutine, Iterable, OrderedDict, Any
+from typing import Dict, List, Optional, Union, Literal, Tuple, Coroutine, Iterable, OrderedDict, Any, overload
 import aiohttp
 import asyncio
 from .types import *
@@ -73,7 +73,8 @@ class AsyncTonCenterClient:
     async def _async_get(self, handler: str, query: Optional[Dict[str, str]] = None):
         url = f"{self.base_url}/{handler}"
         async with aiohttp.ClientSession() as session:
-            async with session.get(url=url, headers=self._get_request_headers(), params={k: v for k, v in query.items() if v is not None}) as response:
+            params = {k: v for k, v in query.items() if v is not None} if query is not None else None
+            async with session.get(url=url, headers=self._get_request_headers(), params=params) as response:
                 return await self._parse_response(response)
 
     async def _async_post(self, handler: str, payload: Dict[str, str]):
@@ -220,6 +221,15 @@ class AsyncTonCenterClient:
         id = uuid.uuid4().int if id is None else id
         return await self._async_post("jsonRpc", {"method": method, "params": params, "id": id, "jsonrpc": jsonrpc})
 
+    @overload
+    async def multicall(self, *coros: Coroutine) -> List[Any]: ...
+
+    @overload
+    async def multicall(self, *coros: List[Coroutine]) -> List[Any]: ...
+
+    @overload
+    async def multicall(self, *coros: Dict[str, Coroutine]) -> Dict[str, Any]: ...
+
     async def multicall(self, *coros: Union[Coroutine, List[Coroutine], Dict[str, Coroutine]]):
         """
         Example1
@@ -260,7 +270,7 @@ class AsyncTonCenterClient:
         if not coros:
             return []
 
-        if isinstance(coros[0], Dict):
+        if isinstance(coros[0], dict):
             tasks = [asyncio.create_task(coro, name=name) for name, coro in coros[0].items()]
             results = await asyncio.gather(*tasks)
             return {task.get_name(): result for task, result in zip(tasks, results)}
@@ -300,7 +310,7 @@ class AsyncTonCenterClient:
     async def trace_tx(self, root_tx: Tx) -> TraceTx:
         """
         trace_tx traces the transaction and its children transactions
-        
+
         Example
         -------
         ```
@@ -309,6 +319,7 @@ class AsyncTonCenterClient:
         trace = await client.trace_tx(txs[0])
         pprint(trace)
         """
+
         async def get_children_tx(source: str, destination: str, created_lt: int) -> Optional[TraceTx]:
             try:
                 _tx = await self.try_locate_tx(source=source, destination=destination, created_lt=created_lt)

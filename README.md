@@ -32,7 +32,7 @@ async def main():
     client = AsyncTonCenterClient(network="testnet")
     txs = await client.get_transactions(address="kQAreQ23eabjRO5glLCbhZ4KxQ9SOIjtw2eM2PuEXXhIZeh3", hash="Lomkyzxh1WBkxvxZ3cJNS2bAYIPC7dPZA67wDomGM4U=", limit=1)
     tx = txs[0]
-
+    result = await client.trace_tx(tx)
     # Pretty print the transaction trace with name mapping for addresses
     named_func = create_named_mapping_func(
         {
@@ -42,7 +42,7 @@ async def main():
         },
         truncate_address=True,
     )
-    pretty_print_trace_tx(tx, named_func=named_func)
+    pretty_print_trace_tx(result, named_func=named_func)
 
 if __name__ == "__main__":
     asyncio.run(main())
