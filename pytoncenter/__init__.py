@@ -23,7 +23,7 @@ from .types import (
     EstimateResult,
 )
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 __all__ = [
     "AsyncTonCenterClient",
