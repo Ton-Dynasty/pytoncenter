@@ -81,5 +81,6 @@ jobs:
         uses: codecov/codecov-action@v4.0.1
         env:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./pytest.xml
           slug: alan890104/pytoncenter
           verbose: true
