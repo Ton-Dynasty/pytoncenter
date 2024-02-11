@@ -26,7 +26,7 @@ from pytoncenter.api import AsyncTonCenterClient
 from pytoncenter.address import Address
 import asyncio
 import json
-from pytoncenter.debug import pretty_print_trace_tx, create_named_mapping_func
+from pytoncenter.tools import pretty_print_trace_tx, create_named_mapping_func
 
 async def main():
     # Initialize the client and query a transaction
@@ -63,5 +63,5 @@ Alan WalletV4R2 -> Jetton Master (Mint:1) [1.0 TON]
 2. [Decode Jetton Get Method Result](./examples/decode_jetton_data.py)
 3. [Decode Custom Get Method Result](./examples/decode_custom_data.py)
 4. [Execute Parallelly](./examples/execute_many.py)
-5. [Subscribe transactions for address](./examples/subscribe.py)
+5. [Subscribe transactions for address](./examples/subscribe_jetton_wallet.py)
 6. [Address Parser](./examples/address.py)
