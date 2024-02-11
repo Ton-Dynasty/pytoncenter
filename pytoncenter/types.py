@@ -49,6 +49,7 @@ Message = TypedDict(
         "body_hash": str,
         "msg_data": Union[MsgRawDataWithBody, MsgRawDataWithComment],
         "messsage": str,
+        "init_state": str,
     },
 )
 Tx = TypedDict(
