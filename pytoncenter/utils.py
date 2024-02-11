@@ -7,6 +7,7 @@ import base64
 
 __all__ = [
     "get_opcode",
+    "encode_base64",
     "decode_base64",
 ]
 
@@ -16,6 +17,15 @@ def get_opcode(data_uint32: int) -> str:
     Get opcode from uint32, the output is a string with 0x prefix, 10 characters long.
     """
     return "0x{:08x}".format(data_uint32).lower()
+
+
+def encode_base64(hex_data: str) -> str:
+    # Convert the hex data back into bytes
+    bytes_data = bytes.fromhex(hex_data)
+    # Encode these bytes into a base64 string
+    base64_encoded = base64.b64encode(bytes_data)
+    # Return the base64-encoded string
+    return base64_encoded.decode()
 
 
 def decode_base64(data: str) -> str:
