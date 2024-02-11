@@ -78,9 +78,9 @@ jobs:
           junitxml-path: ./pytest.xml
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
-        env:
+        uses: codecov/codecov-action@v4
+        with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          env_vars: OS,PYTHON
           files: ./pytest.xml
-          slug: alan890104/pytoncenter
           verbose: true
