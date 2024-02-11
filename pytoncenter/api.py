@@ -120,8 +120,11 @@ class AsyncTonCenterClient:
     async def get_masterchain_info(self) -> MasterChainInfo:
         return await self._async_get("getMasterchainInfo")
 
-    async def get_masterchain_block_signatures(self, seq_no: int):
+    async def get_masterchain_block_signatures(self, seq_no: int) -> BlockSignatures:
         return await self._async_get("getMasterchainBlockSignatures", {"seq_no": seq_no})
+
+    async def get_shards(self, seqno: int) -> Shards:
+        return await self._async_get("shards", {"seqno": seqno})
 
     async def get_shard_block_proof(self, workchain: int, shard: int, seqno: int, from_seqno: Optional[int] = None):
         query = {"workchain": workchain, "shard": shard, "seqno": seqno}
@@ -129,7 +132,7 @@ class AsyncTonCenterClient:
             query["from_seqno"] = from_seqno
         return await self._async_get("getShardBlockProof", query=query)
 
-    async def get_consensus_block(self):
+    async def get_consensus_block(self) -> ConsensusBlock:
         return await self._async_get("getConsensusBlock")
 
     async def lookup_block(self, workchain: int, shard: int, seqno: Optional[int] = None, lt: Optional[int] = None, unixtime: Optional[int] = None):
