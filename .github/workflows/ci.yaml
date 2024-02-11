@@ -65,14 +65,14 @@ jobs:
           TONCENTER_API_KEY: ${{ secrets.TONCENTER_API_KEY }}
         run: |
           source .venv/bin/activate
-          pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=pytoncenter tests/**
+          pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=pytoncenter tests/** | tee pytest-coverage.txt
       #----------------------------------------------
       #              run coverage
       #----------------------------------------------
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         with:
-          pytest-coverage-path: ./.coverage
+          pytest-coverage-path: ./pytest-coverage.txt
           junitxml-path: ./pytest.xml
 
       - name: Upload coverage reports to Codecov
