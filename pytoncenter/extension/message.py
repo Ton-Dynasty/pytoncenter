@@ -1,5 +1,5 @@
 from __future__ import annotations
-from tonpy import CellSlice, Cell
+from tonpy import CellSlice
 from abc import ABC, abstractmethod
 from pytoncenter.address import Address
 from pytoncenter.utils import get_opcode
