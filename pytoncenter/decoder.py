@@ -3,7 +3,7 @@ from typing import Dict, Any, OrderedDict, TypedDict
 from abc import abstractmethod
 from .address import Address
 from tonpy import CellSlice
-import base64
+from .utils import decode_base64
 
 __all__ = ["BaseField", "Field", "BaseDecoder", "Decoder", "JettonDataDecoder"]
 
@@ -39,7 +39,7 @@ class Field:
 
     class Cell(BaseField):
         def decode(self, cell: Dict[str, Any]) -> CellSlice:
-            return base64.b64decode(cell["bytes"] + "==").hex()
+            return decode_base64(cell["bytes"])
 
 
 class BaseDecoder:

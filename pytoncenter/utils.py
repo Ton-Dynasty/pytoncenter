@@ -1,9 +1,25 @@
 import ctypes
 import math
-import nacl
 from nacl.bindings import crypto_sign, crypto_sign_BYTES
 from nacl.signing import SignedMessage
 from nacl.encoding import Encoder, RawEncoder
+import base64
+
+__all__ = [
+    "get_opcode",
+    "decode_base64",
+]
+
+
+def get_opcode(data_uint32: int) -> str:
+    """
+    Get opcode from uint32, the output is a string with 0x prefix, 10 characters long.
+    """
+    return "0x{:08x}".format(data_uint32).lower()
+
+
+def decode_base64(data: str) -> str:
+    return base64.b64decode(data + "==").hex()
 
 
 def string_to_bytes(string, size=1):  # ?
@@ -40,9 +56,11 @@ def crc16(data):
     return bytearray([math.floor(reg / 256), reg % 256])
 
 
-def sign_message(message: bytes,
-                 signing_key: bytes,
-                 encoder: Encoder = RawEncoder, ) -> SignedMessage:
+def sign_message(
+    message: bytes,
+    signing_key: bytes,
+    encoder: Encoder = RawEncoder,
+) -> SignedMessage:
     raw_signed = crypto_sign(message, signing_key)
 
     signature = encoder.encode(raw_signed[:crypto_sign_BYTES])

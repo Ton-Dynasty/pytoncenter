@@ -66,6 +66,12 @@ Tx = TypedDict(
         "out_msgs": List[Message],
     },
 )
+MasterChainInfo = TypedDict("MasterChainInfo", {"last": BlockID, "state_root_hash": str, "init": BlockID, "@extra": str})
+ConsensusBlock = TypedDict("ConsensusBlock", {"consensus_block": int, "timestamp": float})
+Signature = TypedDict("Signature", {"@type": Literal["blocks.signature"], "node_id_short": str, "signature": str})
+BlockSignatures = TypedDict("BlockSignatures", {"@type": Literal["blocks.blockSignatures"], "id": BlockID, "signatures": List[Signature], "@extra": str})
+Shards = TypedDict("Shards", {"@type": Literal["blocks.shard"], "shards": List[BlockID], "@extra": str})
+BlockTxs = TypedDict("BlockTxs", {"@extra": str, "@type": Literal["blocks.transactions"], "id": BlockID, "incomplete": bool, "req_count": int, "transactions": List[Tx]})
 JettonContentPayload = TypedDict("JettonContentPayload", {"image": str, "name": str, "symbol": str, "decimals": int, "description": str})
 JettonContent = TypedDict("JettonContent", {"type": str, "data": JettonContentPayload})
 JettonMasterData = TypedDict(

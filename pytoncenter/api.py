@@ -117,11 +117,14 @@ class AsyncTonCenterClient:
     async def detect_address(self, address: str) -> DetectAddressResult:
         return await self._async_get("detectAddress", {"address": address})
 
-    async def get_masterchain_info(self):
+    async def get_masterchain_info(self) -> MasterChainInfo:
         return await self._async_get("getMasterchainInfo")
 
-    async def get_masterchain_block_signatures(self, seq_no: int):
+    async def get_masterchain_block_signatures(self, seq_no: int) -> BlockSignatures:
         return await self._async_get("getMasterchainBlockSignatures", {"seq_no": seq_no})
+
+    async def get_shards(self, seqno: int) -> Shards:
+        return await self._async_get("shards", {"seqno": seqno})
 
     async def get_shard_block_proof(self, workchain: int, shard: int, seqno: int, from_seqno: Optional[int] = None):
         query = {"workchain": workchain, "shard": shard, "seqno": seqno}
@@ -129,7 +132,7 @@ class AsyncTonCenterClient:
             query["from_seqno"] = from_seqno
         return await self._async_get("getShardBlockProof", query=query)
 
-    async def get_consensus_block(self):
+    async def get_consensus_block(self) -> ConsensusBlock:
         return await self._async_get("getConsensusBlock")
 
     async def lookup_block(self, workchain: int, shard: int, seqno: Optional[int] = None, lt: Optional[int] = None, unixtime: Optional[int] = None):
@@ -177,10 +180,34 @@ class AsyncTonCenterClient:
             query["file_hash"] = file_hash
         return await self._async_get("getBlockHeader", query=query)
 
-    async def get_transactions(self, address: str, limit: Optional[int] = None, lt: Optional[int] = None, hash: Optional[str] = None, to_lt: Optional[int] = 0, archival: bool = False) -> List[Tx]:
+    async def get_transactions(
+        self,
+        address: str,
+        latest_lt: Optional[int] = None,
+        limit: Optional[int] = None,
+        begin_lt: Optional[int] = None,
+        hash: Optional[str] = None,
+        archival: bool = False,
+    ) -> List[Tx]:
+        """
+        get_transactions returns the transactions of the address in descending order of logical time
+
+        Parameters
+        ----------
+        address : str
+            The address to get transactions
+        limit : Optional[int], optional
+            The limit of transactions to get, default maximum 100
+        latest_lt : int, optional
+            The latest logical time to get transactions, default None means always find the latest transactions
+        lt : Optional[int], optional
+            The logical time of the transaction to start getting transactions
+        hash : Optional[str], optional
+            The hash of the transaction to start getting transactions
+        """
         assert limit is None or limit <= 100, "Limit must be less than or equal to 100"
-        assert (lt != 0 and hash != "") or (lt == 0 and hash == ""), "lt and hash must be specified together"
-        return await self._async_get("getTransactions", {"address": address, "limit": limit, "lt": lt, "hash": hash, "to_lt": to_lt, "archival": int(archival)})
+        assert (begin_lt != 0 and hash != "") or (begin_lt == 0 and hash == ""), "begin_lt and hash must be specified together"
+        return await self._async_get("getTransactions", {"address": address, "limit": limit, "lt": begin_lt, "hash": hash, "to_lt": latest_lt, "archival": int(archival)})
 
     async def try_locate_tx(self, source: str, destination: str, created_lt: int) -> Tx:
         return await self._async_get("tryLocateTx", {"source": source, "destination": destination, "created_lt": created_lt})
@@ -281,7 +308,7 @@ class AsyncTonCenterClient:
             tasks = [asyncio.create_task(coro) for coro in coros]
             return await asyncio.gather(*tasks)
 
-    async def subscribeTx(self, address: str, interval_in_second: float = 1.0, init_cur_lt: Optional[int] = None):
+    async def subscribeTx(self, address: str, interval_in_second: float = 1.0, limit: int = 20):
         """
         subscribeTx returns a generator that yields transactions of the address
 
@@ -291,21 +318,39 @@ class AsyncTonCenterClient:
             The address to subscribe to
         interval_in_second : float
             The interval_in_second to poll the TonCenter API, by default 1 second
+        limit : int
+            The limit of transactions to get, by default 20. Means the maximum number of transactions to get in one request.
+            And the oldest transaction you can get in default is 20 transactions from the latest transaction.
 
         Yields
         ------
         Tx
             The transaction of the address
         """
-        cur_lt = init_cur_lt
+        cur_lt = None
         while True:
-            results = await self.get_transactions(address, limit=1 if cur_lt == None else 10, to_lt=0, archival=True)
-            if not results:
-                await asyncio.sleep(interval_in_second)
-                continue
-            cur_lt = results[-1]["transaction_id"]["lt"]
-            for tx in results:
-                yield tx
+            try:
+                if cur_lt is not None:
+                    await asyncio.sleep(interval_in_second)
+                results = await self.get_transactions(address, limit=limit, latest_lt=cur_lt, archival=False)
+                if not results:
+                    continue
+
+                # The results will be sorted by lt in descending order by default, so we need to reverse it
+                results.reverse()
+
+                # Now the last transaction is the latest transaction, it will be the next begin_lt and begin_txhash
+                cur_lt = results[-1]["transaction_id"]["lt"]
+
+                for tx in results:
+                    yield tx
+
+            except asyncio.CancelledError:
+                break
+            except KeyboardInterrupt:
+                break
+            except Exception as e:
+                print(e)
 
     async def trace_tx(self, root_tx: Tx) -> TraceTx:
         """

@@ -3,6 +3,7 @@ from typing import Callable, Optional, Dict
 from treelib import Node, Tree
 from tonpy import CellSlice
 from .address import Address
+from .utils import get_opcode
 
 __all__ = [
     "NamedFunction",
@@ -39,7 +40,7 @@ def defaultNamedFunction(address: Address, **kwargs) -> Optional[str]:
     """
     prefix = kwargs.get("prefix", 6)
     suffix = kwargs.get("suffix", 6)
-    return truncateMiddlePart(address, prefix, suffix) if len(address) > prefix + suffix else address
+    return truncateMiddlePart(address, prefix, suffix)
 
 
 def format_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = defaultNamedFunction) -> str:
@@ -49,8 +50,6 @@ def format_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = defaultNamedF
     """
     raw_src = trace_tx.get("in_msg", {}).get("source", "")
     raw_dst = trace_tx.get("in_msg", {}).get("destination", "")
-    src = Address(raw_src)
-    dst = Address(raw_dst)
     value = int(trace_tx.get("in_msg", {}).get("value", "0")) / 1e9
     opcode = "invalid opcode"
     in_msg_data = trace_tx.get("in_msg", {}).get("msg_data", {})
@@ -58,10 +57,10 @@ def format_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = defaultNamedF
         opcode = trace_tx.get("in_msg", {}).get("message")
     elif in_msg_data.get("@type") == "msg.dataRaw":
         cs = CellSlice(in_msg_data.get("body"))
-        opcode = str(hex(cs.load_uint(32))).lower()
+        opcode = get_opcode(cs.load_uint(32))
     return "{src} -> {dest} ({opcode}) [{value} TON]".format(
-        src=named_func(src),
-        dest=named_func(dst),
+        src=named_func(Address(raw_src)) if raw_src else "<external>",
+        dest=named_func(Address(raw_dst)),
         value=value,
         opcode=opcode,
     )

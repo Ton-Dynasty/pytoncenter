@@ -22,7 +22,8 @@ The following example demonstrates how to obtain the transaction flow for a spec
 - JettonMint Message Transaction on [Testnet TON Viewer](https://testnet.tonviewer.com/transaction/0f8d6b47a00d4914cb447b34cbce42e9e40c1d188e99ab76f56b0685b3532365)
 
 ```python
-from pytoncenter import AsyncTonCenterClient, Address
+from pytoncenter.api import AsyncTonCenterClient
+from pytoncenter.address import Address
 import asyncio
 import json
 from pytoncenter.debug import pretty_print_trace_tx, create_named_mapping_func
