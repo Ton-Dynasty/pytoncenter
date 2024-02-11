@@ -4,14 +4,18 @@ from pytoncenter.utils import get_opcode, decode_base64
 from tonpy import CellSlice
 import asyncio
 from typing import Dict, Callable, Any
+from pytoncenter.extension.message import JettonInternalTransfer, JettonTransfer
+from pytoncenter.debug import truncate_middle
 
 
 async def handle_jetton_internal_transfer(body: CellSlice):
-    return "jetton_internal_transfer"
+    msg = JettonInternalTransfer.parse(body)
+    return f"{truncate_middle(msg.sender)} -> [{msg.amount}]"
 
 
 async def handle_jetton_transfer(body: CellSlice):
-    return "jetton_transfer"
+    msg = JettonTransfer.parse(body)
+    return f"[{msg.amount}] -> {truncate_middle(msg.destination)}"
 
 
 async def default_handler(*args, **kwargs): ...
@@ -35,7 +39,7 @@ async def process_tx(tx: Tx):
         return
 
     cs = CellSlice(msg_data.get("body"))
-    opcode = get_opcode(cs.load_uint(32))
+    opcode = get_opcode(cs.preload_uint(32))
     func = HandleFuncs.get(opcode, default_handler)
     output = await func(cs)
     print(f"Processing tx: {txhash}", lt, opcode, output)
@@ -43,7 +47,7 @@ async def process_tx(tx: Tx):
 
 async def main():
     client = AsyncTonCenterClient(network="testnet")
-    async for tx in client.subscribeTx("kQCFEtu7e-su_IvERBf4FwEXvHISf99lnYuujdo0xYabZQgW", interval_in_second=1, limit=100):
+    async for tx in client.subscribeTx("kQB8L_gn_thGqHLcn8ext98l6efykyB6z4yLCe9vtlrFrX-9", interval_in_second=1, limit=10):
         await process_tx(tx)
 
 

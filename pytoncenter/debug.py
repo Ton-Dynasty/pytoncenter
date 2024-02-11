@@ -7,9 +7,9 @@ from .utils import get_opcode
 
 __all__ = [
     "NamedFunction",
-    "truncateMiddlePart",
+    "truncate_middle",
     "create_named_mapping_func",
-    "defaultNamedFunction",
+    "default_named_func",
     "format_trace_tx",
     "pretty_print_trace_tx",
 ]
@@ -17,15 +17,15 @@ __all__ = [
 NamedFunction = Callable[[str], Optional[str]]
 
 
-def truncateMiddlePart(address: Address, prefix: int, suffix: int) -> str:
+def truncate_middle(address: Address, prefix: int = 6, suffix: int = 6) -> str:
     """
     Truncate middle part of the address to make it more readable
     """
-    address = address.to_string(True, is_test_only=False)
-    return address[:prefix] + "..." + address[-suffix:] if len(address) > prefix + suffix else address
+    addr = address.to_string(True, is_test_only=False)
+    return addr[:prefix] + "..." + addr[-suffix:] if len(addr) > prefix + suffix else addr
 
 
-def defaultNamedFunction(address: Address, **kwargs) -> Optional[str]:
+def default_named_func(address: Address, **kwargs) -> Optional[str]:
     """
     Truncate middle part of the address to make it more readable
 
@@ -40,10 +40,10 @@ def defaultNamedFunction(address: Address, **kwargs) -> Optional[str]:
     """
     prefix = kwargs.get("prefix", 6)
     suffix = kwargs.get("suffix", 6)
-    return truncateMiddlePart(address, prefix, suffix)
+    return truncate_middle(address, prefix, suffix)
 
 
-def format_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = defaultNamedFunction) -> str:
+def format_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = default_named_func) -> str:
     """
     Format transaction trace in a pretty way
     A -> B (Value, Opcode)
@@ -78,13 +78,13 @@ def create_named_mapping_func(mapping: Dict[Address, str], truncate_address: boo
         """
         Truncate middle part of the address to make it more readable
         """
-        default = truncateMiddlePart(address, 6, 6) if truncate_address else address.to_string(True, is_test_only=False)
+        default = truncate_middle(address, 6, 6) if truncate_address else address.to_string(True, is_test_only=False)
         return mapping.get(address, default)
 
     return namedFunction
 
 
-def pretty_print_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = defaultNamedFunction):
+def pretty_print_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = default_named_func):
     """
     print transaction trace in a pretty way
     """
