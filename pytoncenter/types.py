@@ -66,6 +66,7 @@ Tx = TypedDict(
         "out_msgs": List[Message],
     },
 )
+MasterChainInfo = TypedDict("MasterChainInfo", {"last": BlockID, "state_root_hash": str, "init": BlockID, "@extra": str})
 JettonContentPayload = TypedDict("JettonContentPayload", {"image": str, "name": str, "symbol": str, "decimals": int, "description": str})
 JettonContent = TypedDict("JettonContent", {"type": str, "data": JettonContentPayload})
 JettonMasterData = TypedDict(

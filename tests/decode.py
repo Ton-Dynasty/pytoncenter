@@ -1,5 +1,6 @@
 import pytest
-from pytoncenter import Address, AsyncTonCenterClient
+from pytoncenter.api import AsyncTonCenterClient
+from pytoncenter.address import Address
 from pytoncenter.decoder import JettonDataDecoder, Field, Decoder
 import asyncio
 

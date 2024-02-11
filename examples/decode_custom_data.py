@@ -1,4 +1,4 @@
-from pytoncenter import AsyncTonCenterClient
+from pytoncenter.api import AsyncTonCenterClient
 from pytoncenter.decoder import Decoder, Field
 import asyncio
 from pprint import pprint

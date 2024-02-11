@@ -117,7 +117,7 @@ class AsyncTonCenterClient:
     async def detect_address(self, address: str) -> DetectAddressResult:
         return await self._async_get("detectAddress", {"address": address})
 
-    async def get_masterchain_info(self):
+    async def get_masterchain_info(self) -> MasterChainInfo:
         return await self._async_get("getMasterchainInfo")
 
     async def get_masterchain_block_signatures(self, seq_no: int):

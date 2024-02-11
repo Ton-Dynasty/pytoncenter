@@ -1,4 +1,4 @@
-from pytoncenter import AsyncTonCenterClient
+from pytoncenter.api import AsyncTonCenterClient
 from pytoncenter.decoder import JettonDataDecoder
 import asyncio
 from pprint import pprint

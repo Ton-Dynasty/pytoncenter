@@ -1,5 +1,6 @@
 import pytest
-from pytoncenter import Address, AsyncTonCenterClient
+from pytoncenter.address import Address
+from pytoncenter.api import AsyncTonCenterClient
 from pytoncenter.debug import pretty_print_trace_tx, create_named_mapping_func
 
 pytest_plugins = ("pytest_asyncio",)
