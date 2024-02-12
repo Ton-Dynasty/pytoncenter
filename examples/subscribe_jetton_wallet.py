@@ -1,4 +1,4 @@
-from pytoncenter.api import AsyncTonCenterClient
+from pytoncenter.api import AsyncTonCenterClientV2
 from pytoncenter.types import Tx
 from pytoncenter.utils import get_opcode
 from tonpy import CellSlice
@@ -47,7 +47,7 @@ async def default_handler(*args, **kwargs): ...
 
 
 async def main():
-    client = AsyncTonCenterClient(network="testnet")
+    client = AsyncTonCenterClientV2(network="testnet")
 
     callbacks: Dict[str, Callable[[CellSlice, Tx, NamedFunction]]] = {
         JettonInternalTransfer.OPCODE: handle_jetton_internal_transfer,

@@ -1,5 +1,5 @@
 import pytest
-from pytoncenter.api import AsyncTonCenterClient
+from pytoncenter.api import AsyncTonCenterClientV2
 from tonpy import begin_cell
 import asyncio
 
@@ -7,7 +7,7 @@ pytest_plugins = ("pytest_asyncio",)
 
 
 class TestDebug:
-    client: AsyncTonCenterClient
+    client: AsyncTonCenterClientV2
 
     def test_parallel_tasks(self):
         """
@@ -20,7 +20,7 @@ class TestDebug:
         """
 
         async def test_multicall():
-            client = AsyncTonCenterClient(network="testnet")
+            client = AsyncTonCenterClientV2(network="testnet")
 
             result = await client.multicall(
                 client.get_address_information("kQA_NyEP4fSvLS7hzr2z7SKL5NGa67JrykHJjOrvS6XwtoXa"),

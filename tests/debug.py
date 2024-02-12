@@ -1,17 +1,17 @@
 import pytest
 from pytoncenter.address import Address
-from pytoncenter.api import AsyncTonCenterClient
+from pytoncenter.api import AsyncTonCenterClientV2
 from pytoncenter.tools import pretty_print_trace_tx, create_named_mapping_func
 
 pytest_plugins = ("pytest_asyncio",)
 
 
 class TestDebug:
-    client: AsyncTonCenterClient
+    client: AsyncTonCenterClientV2
 
     @pytest.mark.asyncio
     async def test_print_trace(self, capsys):
-        client = AsyncTonCenterClient(network="testnet")
+        client = AsyncTonCenterClientV2(network="testnet")
         txs = await client.get_transactions(
             address="kQAreQ23eabjRO5glLCbhZ4KxQ9SOIjtw2eM2PuEXXhIZeh3",
             limit=1,

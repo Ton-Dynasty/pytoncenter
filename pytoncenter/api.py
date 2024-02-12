@@ -13,7 +13,7 @@ class TonException(Exception):
         self.code = code
 
 
-class AsyncTonCenterClient:
+class AsyncTonCenterClientV2:
     def __init__(self, network: Union[Literal["mainnet"], Literal["testnet"]], *, custom_api_key: Optional[str] = None, custom_base_url: Optional[str] = None) -> None:
         api_key = os.getenv("TONCENTER_API_KEY", custom_api_key)
         # show warning if api_key is None

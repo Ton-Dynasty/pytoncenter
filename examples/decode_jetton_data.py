@@ -1,11 +1,11 @@
-from pytoncenter.api import AsyncTonCenterClient
+from pytoncenter.api import AsyncTonCenterClientV2
 from pytoncenter.decoder import JettonDataDecoder
 import asyncio
 from pprint import pprint
 
 
 async def main():
-    client = AsyncTonCenterClient(network="testnet")
+    client = AsyncTonCenterClientV2(network="testnet")
     result = await client.run_get_method("kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A", "get_jetton_data", {})
     decoder = JettonDataDecoder()
     output = decoder.decode(result)

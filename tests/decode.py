@@ -1,5 +1,5 @@
 import pytest
-from pytoncenter.api import AsyncTonCenterClient
+from pytoncenter.api import AsyncTonCenterClientV2
 from pytoncenter.address import Address
 from pytoncenter.decoder import JettonDataDecoder, Field, Decoder
 import asyncio
@@ -8,10 +8,10 @@ pytest_plugins = ("pytest_asyncio",)
 
 
 class TestDecoder:
-    client: AsyncTonCenterClient
+    client: AsyncTonCenterClientV2
 
     def setup_method(self):
-        self.client = AsyncTonCenterClient(network="testnet")
+        self.client = AsyncTonCenterClientV2(network="testnet")
 
     @pytest.mark.asyncio
     async def test_get_jetton_data(self):
