@@ -14,8 +14,8 @@ class BaseMessage(ABC, Generic[T]):
         return self.__class__.__name__
 
     @property
-    def OPCODE(self) -> Optional[str]:
-        return None
+    def OPCODE(self) -> str:
+        return ""
 
     @classmethod
     def _preparse(cls, cs: CellSlice) -> CellSlice:

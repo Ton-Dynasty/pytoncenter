@@ -1,5 +1,6 @@
-from .types import GetMethodResult
-from typing import Dict, Any, OrderedDict, TypedDict
+from pytoncenter.v2.types import GetMethodResult
+from pytoncenter.v3.models import GetMethodParameterOutput
+from typing import Dict, Any, OrderedDict, TypedDict, List, Union, TypeVar, Generic
 from abc import abstractmethod
 from .address import Address
 from tonpy import CellSlice
@@ -48,7 +49,7 @@ class BaseDecoder:
     """
 
     @abstractmethod
-    def decode(self, data: GetMethodResult) -> Any:
+    def decode(self, data: GetMethodResult):
         raise NotImplementedError
 
 
@@ -56,13 +57,13 @@ class Decoder(BaseDecoder):
     def __init__(self, *fields: BaseField) -> None:
         self._fields = fields
 
-    def decode(self, data: GetMethodResult) -> Dict[str, Any]:
+    def decode(self, data: GetMethodResult):
         assert len(self._fields) == len(data), "Fields count must be equal to data count"
         return OrderedDict((field.name, field.decode(data[i]["value"])) for i, field in enumerate(self._fields))
 
 
 JettonDataDict = TypedDict(
-    "JettonData",
+    "JettonDataDict",
     {
         "total_supply": int,
         "mintable": bool,

@@ -1,4 +1,4 @@
-from pytoncenter.api import AsyncTonCenterClientV2
+from pytoncenter.v2.api import AsyncTonCenterClientV2
 from tonpy import begin_cell
 import asyncio
 

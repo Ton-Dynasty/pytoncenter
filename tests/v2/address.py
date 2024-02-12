@@ -1,6 +1,6 @@
 import pytest
 from pytoncenter.address import Address
-from pytoncenter.api import AsyncTonCenterClientV2
+from pytoncenter.v2.api import AsyncTonCenterClientV2
 
 pytest_plugins = ("pytest_asyncio",)
 

@@ -1,6 +1,6 @@
 from pytoncenter.address import Address
 import asyncio
-from pytoncenter.api import AsyncTonCenterClientV2
+from pytoncenter.v2.api import AsyncTonCenterClientV2
 
 
 async def main():

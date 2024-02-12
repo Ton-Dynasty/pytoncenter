@@ -1,4 +1,3 @@
-import pytest
 from pytoncenter.address import Address
 from pytoncenter.extension.message import JettonInternalTransfer, JettonTransfer, Excess
 from tonpy import CellSlice

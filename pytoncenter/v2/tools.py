@@ -2,8 +2,8 @@ from .types import TraceTx
 from typing import Callable, Optional, Dict
 from treelib import Node, Tree
 from tonpy import CellSlice
-from .address import Address
-from .utils import get_opcode
+from pytoncenter.address import Address
+from pytoncenter.utils import get_opcode
 
 __all__ = [
     "NamedFunction",
@@ -14,7 +14,7 @@ __all__ = [
     "pretty_print_trace_tx",
 ]
 
-NamedFunction = Callable[[str], Optional[str]]
+NamedFunction = Callable[[Address], Optional[str]]
 
 
 def truncate_middle(address: Address, prefix: int = 6, suffix: int = 6) -> str:

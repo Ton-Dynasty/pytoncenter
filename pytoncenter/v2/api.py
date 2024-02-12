@@ -249,15 +249,15 @@ class AsyncTonCenterClientV2:
         return await self._async_post("jsonRpc", {"method": method, "params": params, "id": id, "jsonrpc": jsonrpc})
 
     @overload
-    async def multicall(self, *coros: Coroutine) -> List[Any]: ...
+    async def multicall(self, *coros: Coroutine[Any, Any, Any]) -> List[Any]: ...
 
     @overload
-    async def multicall(self, *coros: List[Coroutine]) -> List[Any]: ...
-
+    async def multicall(self, *coros: Dict[str, Coroutine[Any, Any, Any]]) -> Dict[str, Any]: ...
+    
     @overload
-    async def multicall(self, *coros: Dict[str, Coroutine]) -> Dict[str, Any]: ...
+    async def multicall(self, *coros: List[Coroutine[Any, Any, Any]]) -> List[Any]: ...
 
-    async def multicall(self, *coros: Union[Coroutine, List[Coroutine], Dict[str, Coroutine]]):
+    async def multicall(self, *coros: Union[Coroutine[Any, Any, Any], List[Coroutine[Any, Any, Any]], Dict[str, Coroutine[Any, Any, Any]]]):
         """
         Example1
         -------

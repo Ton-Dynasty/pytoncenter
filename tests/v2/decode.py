@@ -1,8 +1,7 @@
 import pytest
-from pytoncenter.api import AsyncTonCenterClientV2
+from pytoncenter.v2.api import AsyncTonCenterClientV2
 from pytoncenter.address import Address
 from pytoncenter.decoder import JettonDataDecoder, Field, Decoder
-import asyncio
 
 pytest_plugins = ("pytest_asyncio",)
 
