@@ -168,7 +168,7 @@ class GetTracesRequest(BaseModel):
 
 class GetTransactionTraceRequest(BaseModel):
     hash: str = Field(description="Transaction hash. Acceptable in hex, base64 and base64url forms")
-    sort: Literal["none", "asc", "desc"] = Field(description="Sort transactions by lt")
+    sort: Literal["none", "asc", "desc"] = Field("asc", description="Sort transactions by lt")
 
 
 class GetMessagesRequest(BaseModel):

@@ -4,6 +4,7 @@ import aiohttp
 import warnings
 from pytoncenter.v3.models import *
 from pytoncenter.multicall import Multicallable
+from pytoncenter.exception import TonCenterNotWalletException
 
 
 class AsyncTonCenterClientV3(Multicallable):
@@ -57,10 +58,12 @@ class AsyncTonCenterClientV3(Multicallable):
         TonException
             If the request was successful, but the TonCenter API returned an error, a TonException is raised.
         """
-        response.raise_for_status()
+
         result = await response.json()
-        if result.get("error") is not None:
-            raise
+        if not response.ok:
+            if response.status == 409:
+                raise TonCenterNotWalletException(409, result.get("error"))
+            response.raise_for_status()
         return result
 
     async def _async_get(self, handler: str, query: Optional[Dict[str, Any]] = None):
@@ -103,7 +106,7 @@ class AsyncTonCenterClientV3(Multicallable):
         resp = await self._async_get("adjacentTransactions", req.model_dump(exclude_none=True))
         return [Transaction(**r) for r in resp]
 
-    async def get_traces(self, req: GetTransactionTraceRequest) -> List[TransactionTrace]:
+    async def get_transaction_trace(self, req: GetTransactionTraceRequest) -> List[TransactionTrace]:
         resp = await self._async_get("traces", req.model_dump(exclude_none=True))
         return [TransactionTrace(**r) for r in resp]
 
