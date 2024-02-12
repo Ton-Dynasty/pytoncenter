@@ -23,8 +23,8 @@ async def main():
     print(transactions[0].hash)
 
     # Get transaction traces
-    req = GetTransactionRequest(hash=transactions[0].hash)
-    traces = await client.get_transactions(req)
+    req = GetAdjacentTransactionsRequest(hash=transactions[0].hash)
+    traces = await client.get_adjacent_transactions(req)
     print(traces)
 
 

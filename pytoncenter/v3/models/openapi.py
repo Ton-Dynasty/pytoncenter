@@ -19,7 +19,7 @@ class AccountStatus(Enum):
 
 
 class BinaryComment(BaseModel):
-    type: Literal[True] = Field("binary_comment", title="Type")
+    type: Literal["binary_comment"] = Field("binary_comment", title="Type")
     hex_comment: str = Field(..., title="Hex Comment")
 
 
@@ -162,7 +162,7 @@ class SentMessage(BaseModel):
 
 
 class TextComment(BaseModel):
-    type: Literal[True] = Field("text_comment", title="Type")
+    type: Literal["text_comment"] = Field("text_comment", title="Type")
     comment: str = Field(..., title="Comment")
 
 
