@@ -1,8 +1,8 @@
-from pytoncenter.api import AsyncTonCenterClientV2
+from pytoncenter.v2.api import AsyncTonCenterClientV2
 from pytoncenter.address import Address
 import asyncio
 import json
-from pytoncenter.tools import pretty_print_trace_tx, create_named_mapping_func
+from pytoncenter.v2.tools import pretty_print_trace_tx, create_named_mapping_func
 
 
 """
