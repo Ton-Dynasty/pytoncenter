@@ -17,16 +17,16 @@ To use the TON Center API, you need to obtain an API key from the [TON Center](h
 export TONCENTER_API_KEY=your_api_key
 ```
 
-### 3. Install pre-commit hooks
-
-```bash
-poetry run pre-commit install
-```
-
-### 4. Open virtual environment
+### 3. Open virtual environment
 
 ```bash
 poetry shell
+```
+
+### 4. Install pre-commit hooks
+
+```bash
+poetry run pre-commit install
 ```
 
 ### 5. Run tests
