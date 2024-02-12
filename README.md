@@ -80,3 +80,8 @@ Alan WalletV4R2 -> Jetton Master (Mint:1) [1.0 TON]
 4. [Execute Parallelly](./examples/v2/execute_many.py)
 5. [Subscribe transactions for address](./examples/v2/subscribe_jetton_wallet.py)
 6. [Address Parser](./examples/v2/address.py)
+
+
+## Development Guide
+
+Please refer to the [Development Guide](./docs/dev.md) for more information on how to contribute to this project.

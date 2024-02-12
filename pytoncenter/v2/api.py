@@ -219,7 +219,7 @@ class AsyncTonCenterClientV2(Multicallable):
         return await self._async_get("getConfigParam", {"config_id": config_id, "seqno": seqno})
 
     async def run_get_method(self, address: str, method_name: str, params: OrderedDict[str, Any]) -> GetMethodResult:
-        # serialize params into List[List[param name, param value]]
+        # serialize params into List[List[param type, param value]]
         stack = self._serialize(params)
         result = await self._async_post("runGetMethod", {"address": address, "method": method_name, "stack": stack})
         if result.get("@type") == "smc.runResult" and "stack" in result:
