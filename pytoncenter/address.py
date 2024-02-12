@@ -1,10 +1,15 @@
+from __future__ import annotations
 from .utils import crc16, string_to_bytes
 import base64
 import ctypes
 from typing import TypedDict
+from typing import Any
+from pydantic_core import CoreSchema, core_schema
+from pydantic import GetCoreSchemaHandler, TypeAdapter
 
-AddressInfo = TypedDict(
-    "AddressInfo",
+
+_AddressInfo = TypedDict(
+    "_AddressInfo",
     {
         "is_test_only": bool,
         "is_bounceable": bool,
@@ -14,7 +19,7 @@ AddressInfo = TypedDict(
 )
 
 
-def parse_friendly_address(addr_str: str) -> AddressInfo:
+def parse_friendly_address(addr_str: str) -> _AddressInfo:
     if len(addr_str) != 48:
         raise Exception("User-friendly address should contain strictly 48 characters")
 
@@ -191,3 +196,7 @@ class Address:
 
     def __repr__(self) -> str:
         return self.to_string(True, True, True, is_test_only=False)
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type: Address, handler: GetCoreSchemaHandler) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(cls, handler(str))

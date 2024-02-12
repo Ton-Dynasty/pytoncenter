@@ -6,14 +6,11 @@ import asyncio
 from .types import *
 import warnings
 import uuid
+from pytoncenter.exception import TonException
+from pytoncenter.multicall import Multicallable
 
 
-class TonException(Exception):
-    def __init__(self, code: int):
-        self.code = code
-
-
-class AsyncTonCenterClientV2:
+class AsyncTonCenterClientV2(Multicallable):
     def __init__(self, network: Union[Literal["mainnet"], Literal["testnet"]], *, custom_api_key: Optional[str] = None, custom_base_url: Optional[str] = None) -> None:
         api_key = os.getenv("TONCENTER_API_KEY", custom_api_key)
         # show warning if api_key is None
@@ -247,66 +244,6 @@ class AsyncTonCenterClientV2:
     async def json_rpc(self, method: str, params: Dict[str, Any], id: Optional[int] = None, jsonrpc: Optional[str] = "2.0"):
         id = uuid.uuid4().int if id is None else id
         return await self._async_post("jsonRpc", {"method": method, "params": params, "id": id, "jsonrpc": jsonrpc})
-
-    @overload
-    async def multicall(self, *coros: Coroutine[Any, Any, Any]) -> List[Any]: ...
-
-    @overload
-    async def multicall(self, *coros: Dict[str, Coroutine[Any, Any, Any]]) -> Dict[str, Any]: ...
-    
-    @overload
-    async def multicall(self, *coros: List[Coroutine[Any, Any, Any]]) -> List[Any]: ...
-
-    async def multicall(self, *coros: Union[Coroutine[Any, Any, Any], List[Coroutine[Any, Any, Any]], Dict[str, Coroutine[Any, Any, Any]]]):
-        """
-        Example1
-        -------
-        ```
-        client = AsyncTonCenterClient(network="testnet")
-        result = await client.execute([
-            client.get_address_information("address1"),
-            client.get_address_information("address2"),
-        ])
-        print(result)
-        ```
-
-        Example2
-        -------
-        ```
-        client = AsyncTonCenterClient(network="testnet")
-        result = await client.execute(
-            client.get_address_balance("address1"),
-            client.run_get_method("kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A", "get_jetton_data", {})
-        )
-        print(result)
-        ```
-
-        Example3
-        -------
-        ```
-        client = AsyncTonCenterClient(network="testnet")
-        result = await client.execute({
-            "task1": client.get_address_balance("address1"),
-            "task2": client.run_get_method("kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A", "get_jetton_data", {})
-        })
-        print(result)
-        ```
-        """
-
-        assert isinstance(coros, Iterable) or isinstance(coros, Coroutine), "Invalid argument type"
-        if not coros:
-            return []
-
-        if isinstance(coros[0], dict):
-            tasks = [asyncio.create_task(coro, name=name) for name, coro in coros[0].items()]
-            results = await asyncio.gather(*tasks)
-            return {task.get_name(): result for task, result in zip(tasks, results)}
-        if isinstance(coros[0], Iterable):
-            tasks = [asyncio.create_task(coro) for coro in coros[0]]
-            return await asyncio.gather(*tasks)
-        else:
-            tasks = [asyncio.create_task(coro) for coro in coros]
-            return await asyncio.gather(*tasks)
 
     async def subscribeTx(self, address: str, interval_in_second: float = 1.0, limit: int = 20):
         """

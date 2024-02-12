@@ -1,20 +1,12 @@
 import os
-from tonpy import Cell
-from typing import Dict, List, Optional, Union, Literal, Tuple, Coroutine, Iterable, OrderedDict, Any, overload
+from typing import Dict, List, Optional, Union, Literal, Tuple, OrderedDict, Any
 import aiohttp
-import asyncio
 import warnings
-import uuid
-from pytoncenter.v3.models import MasterchainInfo
-from datetime import datetime
+from pytoncenter.v3.models import *
+from pytoncenter.multicall import Multicallable
 
 
-class TonException(Exception):
-    def __init__(self, code: int):
-        self.code = code
-
-
-class AsyncTonCenterClientV3:
+class AsyncTonCenterClientV3(Multicallable):
     def __init__(self, network: Union[Literal["mainnet"], Literal["testnet"]], *, custom_api_key: Optional[str] = None, custom_base_url: Optional[str] = None) -> None:
         api_key = os.getenv("TONCENTER_API_KEY", custom_api_key)
         # show warning if api_key is None
@@ -28,7 +20,7 @@ class AsyncTonCenterClientV3:
             self.base_url = custom_base_url
         else:
             prefix = "" if network == "mainnet" else "testnet."
-            self.base_url = f"https://{prefix}toncenter.com/api/v2"
+            self.base_url = f"https://{prefix}toncenter.com/api/v3"
         self.api_key = api_key
 
     def _get_request_headers(self) -> Dict[str, Any]:
@@ -67,18 +59,18 @@ class AsyncTonCenterClientV3:
         """
         response.raise_for_status()
         result = await response.json()
-        if not result["ok"]:
-            raise TonException(result["code"])
-        return result["result"]
+        if result.get("error") is not None:
+            raise
+        return result
 
-    async def _async_get(self, handler: str, query: Optional[Dict[str, str]] = None):
+    async def _async_get(self, handler: str, query: Optional[Dict[str, Any]] = None):
         url = f"{self.base_url}/{handler}"
         async with aiohttp.ClientSession() as session:
             params = {k: v for k, v in query.items() if v is not None} if query is not None else None
             async with session.get(url=url, headers=self._get_request_headers(), params=params) as response:
                 return await self._parse_response(response)
 
-    async def _async_post(self, handler: str, payload: Dict[str, str]):
+    async def _async_post(self, handler: str, payload: Dict[str, Any]):
         url = f"{self.base_url}/{handler}"
         async with aiohttp.ClientSession() as session:
             async with session.post(url=url, headers=self._get_request_headers(), json={k: v for k, v in payload.items() if v is not None}) as response:
@@ -87,20 +79,86 @@ class AsyncTonCenterClientV3:
     async def get_masterchain_info(self) -> MasterchainInfo:
         return await self._async_get("masterchainInfo")
 
-    async def get_blocks(
-        self,
-        workchain: Optional[int] = None,
-        shard: Optional[str] = None,
-        seqno: Optional[int] = None,
-        start_utime: Optional[datetime] = None,
-        end_utime: Optional[datetime] = None,
-        start_lt: Optional[int] = None,
-        end_lt: Optional[int] = None,
-        limit: Optional[int] = None,
-        offest: Optional[int] = None,
-        sort: Literal["asc", "desc"] = "desc",
-    ):
-        if shard is not None:
-            assert workchain
-        if seqno is not None:
-            assert workchain and shard
+    async def get_blocks(self, req: GetBlockRequest) -> List[Block]:
+        resp = await self._async_get("blocks", req.model_dump(exclude_none=True))
+        return [Block(**r) for r in resp]
+
+    async def get_masterchain_block_shards(self, req: GetMasterchainBlockShardsRequest) -> List[Block]:
+        resp = await self._async_get("masterchainBlockShards", req.model_dump(exclude_none=True))
+        return [Block(**r) for r in resp]
+
+    async def get_transactions(self, req: GetTransactionRequest) -> List[Transaction]:
+        resp = await self._async_get("transactions", req.model_dump(exclude_none=True))
+        return [Transaction(**r) for r in resp]
+
+    async def get_transactions_by_masterchain_block(self, req: GetTransactionByMasterchainBlockRequest) -> List[Transaction]:
+        resp = await self._async_get("transactionsByMasterchainBlock", req.model_dump(exclude_none=True))
+        return [Transaction(**r) for r in resp]
+
+    async def get_transaction_by_message(self, req: GetTransactionByMessageRequest) -> List[Transaction]:
+        resp = await self._async_get("transactionsByMessage", req.model_dump(exclude_none=True))
+        return [Transaction(**r) for r in resp]
+
+    async def get_adjacent_transactions(self, req: GetAdjacentTransactionsRequest) -> List[Transaction]:
+        resp = await self._async_get("adjacentTransactions", req.model_dump(exclude_none=True))
+        return [Transaction(**r) for r in resp]
+
+    async def get_traces(self, req: GetTransactionTraceRequest) -> List[TransactionTrace]:
+        resp = await self._async_get("traces", req.model_dump(exclude_none=True))
+        return [TransactionTrace(**r) for r in resp]
+
+    async def get_messages(self, req: GetMessagesRequest) -> List[Message]:
+        resp = await self._async_get("messages", req.model_dump(exclude_none=True))
+        return [Message(**r) for r in resp]
+
+    async def get_nft_collections(self, req: GetNFTCollectionsRequest) -> List[NFTCollection]:
+        resp = await self._async_get("nft/collections", req.model_dump(exclude_none=True))
+        return [NFTCollection(**r) for r in resp]
+
+    async def get_nft_items(self, req: GetNFTItemsRequest) -> List[NFTItem]:
+        resp = await self._async_get("nft/items", req.model_dump(exclude_none=True))
+        return [NFTItem(**r) for r in resp]
+
+    async def get_nft_transfers(self, req: GetNFTTransfersRequest) -> List[NFTTransfer]:
+        resp = await self._async_get("nft/transfers", req.model_dump(exclude_none=True))
+        return [NFTTransfer(**r) for r in resp]
+
+    async def get_jetton_masters(self, req: GetJettonMastersRequest) -> List[JettonMaster]:
+        resp = await self._async_get("jetton/masters", req.model_dump(exclude_none=True))
+        return [JettonMaster(**r) for r in resp]
+
+    async def get_jetton_wallets(self, req: GetJettonWalletsRequest) -> List[JettonWallet]:
+        resp = await self._async_get("jetton/wallets", req.model_dump(exclude_none=True))
+        return [JettonWallet(**r) for r in resp]
+
+    async def get_jetton_transfers(self, req: GetJettonTransfersRequest) -> List[JettonTransfer]:
+        resp = await self._async_get("jetton/transfers", req.model_dump(exclude_none=True))
+        return [JettonTransfer(**r) for r in resp]
+
+    async def get_jetton_burns(self, req: GetJettonBurnsRequest) -> List[JettonBurn]:
+        resp = await self._async_get("jetton/burns", req.model_dump(exclude_none=True))
+        return [JettonBurn(**r) for r in resp]
+
+    async def get_top_accounts_by_balance(self, req: GetTopAccountsByBalanceRequest) -> List[AccountBalance]:
+        resp = await self._async_get("topAccountsByBalance", req.model_dump(exclude_none=True))
+        return [AccountBalance(**r) for r in resp]
+
+    async def get_account(self, req: GetAccountRequest) -> Account:
+        resp = await self._async_get("account", req.model_dump(exclude_none=True))
+        return Account(**resp)
+
+    async def get_wallet(self, req: GetWalletRequest) -> WalletInfo:
+        resp = await self._async_get("wallet", req.model_dump(exclude_none=True))
+        return WalletInfo(**resp)
+
+    async def send_message(self, req: ExternalMessage) -> SentMessage:
+        resp = await self._async_post("sendMessage", req.model_dump(exclude_none=True))
+        return SentMessage(**resp)
+
+    async def run_get_method(self, req: RunGetMethodRequest) -> RunGetMethodResponse:
+        resp = await self._async_post("runGetMethod", req.model_dump(exclude_none=True))
+        return RunGetMethodResponse(**resp)
+
+    async def estimate_fee(self, req: EstimateFeeRequest) -> EstimateFeeResponse:
+        resp = await self._async_post("estimateFee", req.model_dump(exclude_none=True))
+        return EstimateFeeResponse(**resp)
