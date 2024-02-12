@@ -40,3 +40,9 @@ make test
 ```bash
 poetry run python examples/v3/decode_jetton_data.py
 ```
+
+### 7. Close virtual environment
+
+```bash
+deactivate
+```
