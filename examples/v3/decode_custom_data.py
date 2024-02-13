@@ -35,8 +35,8 @@ async def main():
         address="kQBO50OJlbegG9CNOeIL8v85Z0sGTJY1YwiOQ-1MtxRv8hz7",
         method="getEstimate",
         stack=[
-            GetMethodParameterInput(type=GetMethodParameterType.num, value=1),
-            GetMethodParameterInput(type=GetMethodParameterType.num, value=int(0.004 * 2**64)),
+            GetMethodParameterInput(type="num", value=1),
+            GetMethodParameterInput(type="num", value=int(0.004 * 2**64)),
         ],
     )
     result = await client.run_get_method(req)

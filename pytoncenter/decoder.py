@@ -1,20 +1,30 @@
 from __future__ import annotations
-from pytoncenter.v2.types import GetMethodResult
-from pytoncenter.v3.models import GetMethodParameterOutput, GetMethodParameterType, RunGetMethodResponse
-from typing import Dict, Any, OrderedDict, TypedDict, List, Union, Optional, Tuple
-from abc import abstractmethod, ABC
-from .address import Address
-from tonpy import CellSlice
-from .utils import decode_base64
+
 import warnings
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, OrderedDict, TypedDict, Union
+
+from tonpy import CellSlice
+
+from pytoncenter.v2.types import GetMethodResult
+from pytoncenter.v3.models import (
+    GetMethodParameterOutput,
+    GetMethodParameterType,
+    RunGetMethodResponse,
+)
+
+from .address import Address
+from .utils import decode_base64
 
 __all__ = ["BaseType", "Types", "BaseDecoder", "Decoder", "JettonDataDecoder"]
 
 
-GetMethodResultType = Union[GetMethodResult | RunGetMethodResponse]
+GetMethodResultType = Union[GetMethodResult, RunGetMethodResponse]
 
 
 class BaseType:
+    type: GetMethodParameterType
+
     def __init__(self, name: str) -> None:
         self._name = name
 
@@ -22,48 +32,49 @@ class BaseType:
     def name(self) -> str:
         return self._name
 
-    @property
-    @abstractmethod
-    def type(self) -> Optional[GetMethodParameterType]:
-        return None
-
     def decode(self, data: Any):
         raise NotImplementedError
 
 
 class Types:
     class Raw(BaseType):
-        type = None
+        type = "unsupported_type"
 
         def decode(self, data: Any):
             return data
 
     class Number(BaseType):
-        type = GetMethodParameterType.num
+        type = "num"
 
         def decode(self, hex_str: str) -> int:
             return int(hex_str, 16)
 
     class Address(BaseType):
-        type = GetMethodParameterType.cell
+        type = "cell"
 
         def decode(self, cell: str) -> Address:
             return Address(CellSlice(cell).load_address())
 
     class Bool(BaseType):
-        type = GetMethodParameterType.num
+        type = "num"
 
         def decode(self, hex_str: str) -> bool:
             return bool(int(hex_str, 16))
 
     class Cell(BaseType):
-        type = GetMethodParameterType.cell
+        type = "cell"
 
         def decode(self, cell: str) -> CellSlice:
+            return CellSlice(cell)
+
+    class B64String(BaseType):
+        type = "cell"
+
+        def decode(self, cell: str) -> str:
             return decode_base64(cell)
 
     class List(BaseType):
-        type = GetMethodParameterType.list
+        type = "list"
 
         def __init__(self, name: str, *typs: BaseType) -> None:
             super().__init__(name)
@@ -74,7 +85,7 @@ class Types:
             return data
 
     class Tuple(BaseType):
-        type = GetMethodParameterType.tuple
+        type = "tuple"
 
         def __init__(self, name: str, *typs: BaseType) -> None:
             super().__init__(name)
@@ -85,7 +96,7 @@ class Types:
             return data
 
     class Slice(BaseType):
-        type = GetMethodParameterType.slice
+        type = "slice"
 
         def decode(self, data: Any):
             warnings.warn("Slice type is not supported yet, return raw data", RuntimeWarning)
@@ -117,13 +128,13 @@ class Decoder(BaseDecoder):
         if all(isinstance(data[i], dict) for i in range(len(data))):
             new_data = []
             for i in range(len(data)):
-                assert self.types[i] is None or self.types[i].type.value == data[i]["type"], f"Field {i} type must be {self.types[i].type}, but got {data[i]['type']}"
-                type = data[i].get("type")
-                value = data[i].get("value")
-                if type == GetMethodParameterType.cell.value:
-                    new_data.append(GetMethodParameterOutput(type=type, value=value.get("bytes", "")))
+                assert self.types[i] is None or self.types[i].type == data[i]["type"], f"Field {i} type must be {self.types[i].type}, but got {data[i]['type']}"
+                _type = data[i].get("type")
+                _value = data[i].get("value")
+                if _type == "cell":
+                    new_data.append(GetMethodParameterOutput(type=_type, value=_value.get("bytes", "")))
                 else:
-                    new_data.append(GetMethodParameterOutput(type=type, value=value))
+                    new_data.append(GetMethodParameterOutput(type=_type, value=_value))
             return new_data
         raise ValueError("Data must be a RunGetMethodResponse(v3) or a list of GetMethodResult(v2)")
 
@@ -142,7 +153,7 @@ class AutoDecoder(BaseDecoder):
             for i in range(len(data)):
                 type = data[i].get("type")
                 value = data[i].get("value")
-                if type == GetMethodParameterType.cell.value:
+                if type == "cell":
                     new_data.append(GetMethodParameterOutput(type=type, value=value.get("bytes", "")))
                 else:
                     new_data.append(GetMethodParameterOutput(type=type, value=value))
@@ -156,24 +167,27 @@ class AutoDecoder(BaseDecoder):
         def _recursive_decode(data: GetMethodParameterOutput, prefix: str = "idx_", idx: int = 0, depth: int = 0):
             field_name = f"{prefix}{idx}"
 
-            if data.type == GetMethodParameterType.cell:
-                # try to decode as address
+            if data.type == "cell":
+                assert isinstance(data.value, str), "Cell value must be a string"
                 try:
                     t = Types.Address(field_name)
                     return t.name, t.decode(data.value)
                 except:
-                    t = Types.Cell(field_name)
+                    t = Types.B64String(field_name)
                     return t.name, t.decode(data.value)
-            if data.type == GetMethodParameterType.slice:
+            if data.type == "slice":
+                assert isinstance(data.value, list), "Slice value must be a list"
                 t = Types.Slice(field_name)
                 return t.name, t.decode(data.value)
-            if data.type == GetMethodParameterType.list or data.type == GetMethodParameterType.tuple:
+            if data.type == "list" or data.type == "tuple":
+                assert isinstance(data.value, list), "List value must be a list"
                 results = []
                 for i, t in enumerate(data.value):
                     result, _ = _recursive_decode(t, f"{field_name}_", i, depth + 1)
                     results.append(result)
                 return field_name, results
-            elif data.type == GetMethodParameterType.num:
+            elif data.type == "num":
+                assert isinstance(data.value, str), "Number value must be a string"
                 t = Types.Number(field_name)
                 return t.name, t.decode(data.value)
             else:
@@ -209,7 +223,7 @@ class JettonDataDecoder(BaseDecoder):
         Types.Bool("mintable"),
         Types.Address("admin_address"),
         Types.Cell("jetton_content"),
-        Types.Cell("jetton_wallet_code"),
+        Types.B64String("jetton_wallet_code"),
     )
     _instance = None
 

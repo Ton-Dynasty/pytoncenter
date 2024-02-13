@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import Any, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, model_serializer
@@ -13,11 +12,7 @@ class AccountBalance(BaseModel):
     balance: str = Field(..., title="Balance")
 
 
-class AccountStatus(str, Enum):
-    uninit = "uninit"
-    frozen = "frozen"
-    active = "active"
-    nonexist = "nonexist"
+AccountStatus = Literal["uninit", "frozen", "active", "nonexist"]
 
 
 class BinaryComment(BaseModel):
@@ -54,13 +49,7 @@ class Fee(BaseModel):
     fwd_fee: int = Field(..., title="Fwd Fee")
 
 
-class GetMethodParameterType(str, Enum):
-    cell = "cell"
-    slice = "slice"
-    num = "num"
-    list = "list"
-    tuple = "tuple"
-    unsupported_type = "unsupported_type"
+GetMethodParameterType = Literal["cell", "slice", "num", "list", "tuple", "unsupported_type"]
 
 
 class JettonBurn(BaseModel):
@@ -240,15 +229,15 @@ class EstimateFeeResponse(BaseModel):
 
 
 class GetMethodParameterInput(BaseModel):
-    type: GetMethodParameterType
+    type: GetMethodParameterType = Field(..., title="Type")
     value: Optional[Union[List[GetMethodParameterInput], str, int, bool, PyAddress]] = Field(..., title="Value")
 
     @model_serializer
     def serialize_value(self):
-        if isinstance(self.value, int) and self.type == GetMethodParameterType.num:
+        if isinstance(self.value, int) and self.type == "num":
             v = hex(self.value)
             return {"type": self.type, "value": v}
-        if isinstance(self.value, bool) and self.type == GetMethodParameterType.num:
+        if isinstance(self.value, bool) and self.type == "num":
             v = "-0x1" if self.value else "0x0"
             return {"type": self.type, "value": v}
         return {"type": self.type, "value": self.value}

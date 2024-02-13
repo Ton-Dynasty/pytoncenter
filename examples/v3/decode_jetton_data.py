@@ -1,8 +1,9 @@
-from pytoncenter import get_client
-from pytoncenter.v3.models import *
-from pytoncenter.decoder import JettonDataDecoder, AutoDecoder
 import asyncio
 from pprint import pprint
+
+from pytoncenter import get_client
+from pytoncenter.decoder import AutoDecoder, JettonDataDecoder
+from pytoncenter.v3.models import *
 
 
 async def main():
@@ -11,7 +12,7 @@ async def main():
     account_info = await client.get_account(req)
 
     # Check account status is active
-    if account_info.status == AccountStatus.active:
+    if account_info.status == "active":
         print("Account is active")
     else:
         raise Exception("Account is not active")
@@ -22,12 +23,12 @@ async def main():
     result = await client.run_get_method(req)
     print(result)
 
-    print("=====================================")
+    print("===============Jetton Decoder======================")
     decoder = JettonDataDecoder()
     jetton_data = decoder.decode(result)
     pprint(jetton_data, width=120)
 
-    print("=====================================")
+    print("===============Auto Decoder======================")
     decoder = AutoDecoder()
     jetton_data = decoder.decode(result)
     pprint(jetton_data, width=120)
