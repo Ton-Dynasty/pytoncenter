@@ -1,22 +1,23 @@
-from pytoncenter.api import AsyncTonCenterClient
-from pytoncenter.types import Tx
-from pytoncenter.utils import get_opcode
-from tonpy import CellSlice
 import asyncio
-from typing import Dict, Callable
-from pytoncenter.extension.message import JettonInternalTransfer, JettonTransfer, JettonBurn
-from pytoncenter.tools import create_named_mapping_func, NamedFunction
 import logging
-from pytoncenter.address import Address
 import traceback
+from typing import Callable, Coroutine, Dict
 
+from tonpy import CellSlice
+
+from pytoncenter.address import Address
+from pytoncenter.extension.message import JettonMessage
+from pytoncenter.utils import get_opcode
+from pytoncenter.v2.api import AsyncTonCenterClientV2
+from pytoncenter.v2.tools import NamedFunction, create_named_mapping_func
+from pytoncenter.v2.types import Tx
 
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 
-async def handle_jetton_internal_transfer(body: CellSlice, tx: Tx, labeler: Callable):
-    msg = JettonInternalTransfer.parse(body)
+async def handle_jetton_internal_transfer(body: CellSlice, tx: Tx, labeler: NamedFunction):
+    msg = JettonMessage.InternalTransfer.parse(body)
     src = labeler(Address(tx.get("in_msg", {}).get("source")))
     dst = labeler(Address(tx.get("in_msg", {}).get("destination")))
     jetton_amount = round(float(msg.amount) / 1e9, 4)
@@ -27,8 +28,8 @@ async def handle_jetton_internal_transfer(body: CellSlice, tx: Tx, labeler: Call
         LOGGER.info(f"[{msg.OPCODE}] Jetton Internal Transfer | {src} -> {dst}, forward {forward_ton} TON")
 
 
-async def handle_jetton_transfer(body: CellSlice, tx: Tx, labeler: Callable):
-    msg = JettonTransfer.parse(body)
+async def handle_jetton_transfer(body: CellSlice, tx: Tx, labeler: NamedFunction):
+    msg = JettonMessage.Transfer.parse(body)
     jetton_amount = round(float(msg.amount) / 1e6, 4)
     value = round(float(tx.get("in_msg", {}).get("value")) / 1e9, 4)
     src = labeler(Address(tx.get("in_msg", {}).get("source")))
@@ -36,8 +37,8 @@ async def handle_jetton_transfer(body: CellSlice, tx: Tx, labeler: Callable):
     LOGGER.info(f"[{msg.OPCODE}] Jetton Transfer | {src} -> {dst} | {jetton_amount} USDT, {value} TON")
 
 
-async def handle_jetton_burn(body: CellSlice, tx: Tx, labeler: Callable):
-    msg = JettonBurn.parse(body)
+async def handle_jetton_burn(body: CellSlice, tx: Tx, labeler: NamedFunction):
+    msg = JettonMessage.Burn.parse(body)
     burn_amount = round(float(msg.amount) / 1e6, 4)
     src = labeler(Address(tx.get("in_msg", {}).get("source")))
     LOGGER.info(f"[{msg.OPCODE}] Jetton Burn | 🔥 {src} burn {burn_amount} USDT 🔥")
@@ -47,12 +48,12 @@ async def default_handler(*args, **kwargs): ...
 
 
 async def main():
-    client = AsyncTonCenterClient(network="testnet")
+    client = AsyncTonCenterClientV2(network="testnet")
 
-    callbacks: Dict[str, Callable[[CellSlice, Tx, NamedFunction]]] = {
-        JettonInternalTransfer.OPCODE: handle_jetton_internal_transfer,
-        JettonTransfer.OPCODE: handle_jetton_transfer,
-        JettonBurn.OPCODE: handle_jetton_burn,
+    callbacks: Dict[str, Callable[[CellSlice, Tx, NamedFunction], Coroutine]] = {
+        JettonMessage.InternalTransfer.OPCODE: handle_jetton_internal_transfer,
+        JettonMessage.Transfer.OPCODE: handle_jetton_transfer,
+        JettonMessage.Burn.OPCODE: handle_jetton_burn,
     }
 
     labeler = create_named_mapping_func(
@@ -66,7 +67,7 @@ async def main():
     )
 
     # Subscribe to transactions of a jetton wallet
-    async for tx in client.subscribeTx("kQB8L_gn_thGqHLcn8ext98l6efykyB6z4yLCe9vtlrFrX-9", interval_in_second=1, limit=100):
+    async for tx in client.subscribe_tx("kQB8L_gn_thGqHLcn8ext98l6efykyB6z4yLCe9vtlrFrX-9", interval_in_second=1, limit=100):
         try:
             in_msg = tx.get("in_msg", {})
             msg_data = in_msg.get("msg_data", {})

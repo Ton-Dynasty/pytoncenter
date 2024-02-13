@@ -1,14 +1,30 @@
-from .types import GetMethodResult
-from typing import Dict, Any, OrderedDict, TypedDict
-from abc import abstractmethod
-from .address import Address
+from __future__ import annotations
+
+import warnings
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, OrderedDict, TypedDict, Union
+
 from tonpy import CellSlice
+
+from pytoncenter.v2.types import GetMethodResult
+from pytoncenter.v3.models import (
+    GetMethodParameterOutput,
+    GetMethodParameterType,
+    RunGetMethodResponse,
+)
+
+from .address import Address
 from .utils import decode_base64
 
-__all__ = ["BaseField", "Field", "BaseDecoder", "Decoder", "JettonDataDecoder"]
+__all__ = ["BaseType", "Types", "BaseDecoder", "Decoder", "JettonDataDecoder"]
 
 
-class BaseField:
+GetMethodResultType = Union[GetMethodResult, RunGetMethodResponse]
+
+
+class BaseType:
+    type: GetMethodParameterType
+
     def __init__(self, name: str) -> None:
         self._name = name
 
@@ -20,49 +36,173 @@ class BaseField:
         raise NotImplementedError
 
 
-class Field:
-    class RawField(BaseField):
+class Types:
+    class Raw(BaseType):
+        type = "unsupported_type"
+
         def decode(self, data: Any):
             return data
 
-    class Number(BaseField):
+    class Number(BaseType):
+        type = "num"
+
         def decode(self, hex_str: str) -> int:
             return int(hex_str, 16)
 
-    class Address(BaseField):
-        def decode(self, cell: Dict[str, Any]) -> Address:
-            return Address(CellSlice(cell["bytes"]).load_address())
+    class Address(BaseType):
+        type = "cell"
 
-    class Bool(BaseField):
+        def decode(self, cell: str) -> Address:
+            return Address(CellSlice(cell).load_address())
+
+    class Bool(BaseType):
+        type = "num"
+
         def decode(self, hex_str: str) -> bool:
             return bool(int(hex_str, 16))
 
-    class Cell(BaseField):
-        def decode(self, cell: Dict[str, Any]) -> CellSlice:
-            return decode_base64(cell["bytes"])
+    class Cell(BaseType):
+        type = "cell"
+
+        def decode(self, cell: str) -> CellSlice:
+            return CellSlice(cell)
+
+    class B64String(BaseType):
+        type = "cell"
+
+        def decode(self, cell: str) -> str:
+            return decode_base64(cell)
+
+    class List(BaseType):
+        type = "list"
+
+        def __init__(self, name: str, *typs: BaseType) -> None:
+            super().__init__(name)
+            self.typs = typs
+
+        def decode(self, data: Any):
+            warnings.warn("List type is not supported yet, return raw data", RuntimeWarning)
+            return data
+
+    class Tuple(BaseType):
+        type = "tuple"
+
+        def __init__(self, name: str, *typs: BaseType) -> None:
+            super().__init__(name)
+            self.typs = typs
+
+        def decode(self, data: Any):
+            warnings.warn("Tuple type is not supported yet, return raw data", RuntimeWarning)
+            return data
+
+    class Slice(BaseType):
+        type = "slice"
+
+        def decode(self, data: Any):
+            warnings.warn("Slice type is not supported yet, return raw data", RuntimeWarning)
+            return data
 
 
-class BaseDecoder:
+class BaseDecoder(ABC):
     """
     BaseDecoderDecoder decodes the result of the return of the TON smart contract get method
     """
 
     @abstractmethod
-    def decode(self, data: GetMethodResult) -> Any:
+    def decode(self, data: GetMethodResultType):
         raise NotImplementedError
 
 
 class Decoder(BaseDecoder):
-    def __init__(self, *fields: BaseField) -> None:
-        self._fields = fields
+    def __init__(self, *typ: BaseType) -> None:
+        self.types = typ
+        assert len(self.types) == len(set(field.name for field in self.types)), "Field names must be unique"
 
-    def decode(self, data: GetMethodResult) -> Dict[str, Any]:
-        assert len(self._fields) == len(data), "Fields count must be equal to data count"
-        return OrderedDict((field.name, field.decode(data[i]["value"])) for i, field in enumerate(self._fields))
+    def _validate(self, data: GetMethodResultType) -> List[GetMethodParameterOutput]:
+        if isinstance(data, RunGetMethodResponse):
+            assert len(self.types) == len(data.stack), "Fields count must be equal to data count"
+            return data.stack
+
+        assert len(self.types) == len(data), "Fields count must be equal to data count"
+        assert isinstance(data, list), "Data must be a list"
+        if all(isinstance(data[i], dict) for i in range(len(data))):
+            new_data = []
+            for i in range(len(data)):
+                assert self.types[i] is None or self.types[i].type == data[i]["type"], f"Field {i} type must be {self.types[i].type}, but got {data[i]['type']}"
+                _type = data[i].get("type")
+                _value = data[i].get("value")
+                if _type == "cell":
+                    new_data.append(GetMethodParameterOutput(type=_type, value=_value.get("bytes", "")))
+                else:
+                    new_data.append(GetMethodParameterOutput(type=_type, value=_value))
+            return new_data
+        raise ValueError("Data must be a RunGetMethodResponse(v3) or a list of GetMethodResult(v2)")
+
+    def decode(self, data: GetMethodResultType) -> Dict[str, Any]:
+        _data = self._validate(data)
+        return OrderedDict((field.name, field.decode(_data[i].value)) for i, field in enumerate(self.types))
+
+
+class AutoDecoder(BaseDecoder):
+    def _transform(self, data: GetMethodResultType) -> List[GetMethodParameterOutput]:
+        if isinstance(data, RunGetMethodResponse):
+            return data.stack
+        assert isinstance(data, list), "Data must be a list"
+        if all(isinstance(data[i], dict) for i in range(len(data))):
+            new_data = []
+            for i in range(len(data)):
+                type = data[i].get("type")
+                value = data[i].get("value")
+                if type == "cell":
+                    new_data.append(GetMethodParameterOutput(type=type, value=value.get("bytes", "")))
+                else:
+                    new_data.append(GetMethodParameterOutput(type=type, value=value))
+            return new_data
+        raise ValueError("Data must be a RunGetMethodResponse(v3) or a list of GetMethodResult(v2)")
+
+    def decode(self, data: GetMethodResultType) -> Dict[str, Any]:
+        _data = self._transform(data)
+        output = {}
+
+        def _recursive_decode(data: GetMethodParameterOutput, prefix: str = "idx_", idx: int = 0, depth: int = 0):
+            field_name = f"{prefix}{idx}"
+
+            if data.type == "cell":
+                assert isinstance(data.value, str), "Cell value must be a string"
+                try:
+                    t = Types.Address(field_name)
+                    return t.name, t.decode(data.value)
+                except:
+                    t = Types.B64String(field_name)
+                    return t.name, t.decode(data.value)
+            if data.type == "slice":
+                assert isinstance(data.value, list), "Slice value must be a list"
+                t = Types.Slice(field_name)
+                return t.name, t.decode(data.value)
+            if data.type == "list" or data.type == "tuple":
+                assert isinstance(data.value, list), "List value must be a list"
+                results = []
+                for i, t in enumerate(data.value):
+                    result, _ = _recursive_decode(t, f"{field_name}_", i, depth + 1)
+                    results.append(result)
+                return field_name, results
+            elif data.type == "num":
+                assert isinstance(data.value, str), "Number value must be a string"
+                t = Types.Number(field_name)
+                return t.name, t.decode(data.value)
+            else:
+                t = Types.Raw(field_name)
+                return t.name, t.decode(data.value)
+
+        for idx, field in enumerate(_data):
+            name, value = _recursive_decode(field, idx=idx)
+            output[name] = value
+
+        return output
 
 
 JettonDataDict = TypedDict(
-    "JettonData",
+    "JettonDataDict",
     {
         "total_supply": int,
         "mintable": bool,
@@ -79,11 +219,11 @@ class JettonDataDecoder(BaseDecoder):
     """
 
     decoder = Decoder(
-        Field.Number("total_supply"),
-        Field.Bool("mintable"),
-        Field.Address("admin_address"),
-        Field.Cell("jetton_content"),
-        Field.Cell("jetton_wallet_code"),
+        Types.Number("total_supply"),
+        Types.Bool("mintable"),
+        Types.Address("admin_address"),
+        Types.Cell("jetton_content"),
+        Types.B64String("jetton_wallet_code"),
     )
     _instance = None
 
@@ -92,5 +232,5 @@ class JettonDataDecoder(BaseDecoder):
             cls._instance = super(JettonDataDecoder, cls).__new__(cls)
         return cls._instance
 
-    def decode(self, data: GetMethodResult) -> JettonDataDict:
+    def decode(self, data: GetMethodResultType) -> JettonDataDict:
         return self.decoder.decode(data)

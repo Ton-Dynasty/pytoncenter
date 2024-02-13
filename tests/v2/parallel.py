@@ -1,13 +1,14 @@
-import pytest
-from pytoncenter.api import AsyncTonCenterClient
-from tonpy import begin_cell
 import asyncio
+
+from tonpy import begin_cell
+
+from pytoncenter.v2.api import AsyncTonCenterClientV2
 
 pytest_plugins = ("pytest_asyncio",)
 
 
 class TestDebug:
-    client: AsyncTonCenterClient
+    client: AsyncTonCenterClientV2
 
     def test_parallel_tasks(self):
         """
@@ -20,13 +21,14 @@ class TestDebug:
         """
 
         async def test_multicall():
-            client = AsyncTonCenterClient(network="testnet")
+            client = AsyncTonCenterClientV2(network="testnet")
 
             result = await client.multicall(
                 client.get_address_information("kQA_NyEP4fSvLS7hzr2z7SKL5NGa67JrykHJjOrvS6XwtoXa"),
                 client.get_address_balance("kQA_NyEP4fSvLS7hzr2z7SKL5NGa67JrykHJjOrvS6XwtoXa"),
             )
             assert len(result) == 2
+            assert isinstance(result, list)
             await asyncio.sleep(1)
 
             result1 = await client.multicall(
@@ -37,6 +39,7 @@ class TestDebug:
                 ]
             )
             assert len(result1) == 3
+            assert isinstance(result1, list)
             await asyncio.sleep(1)
 
             result2 = await client.multicall(
@@ -47,6 +50,7 @@ class TestDebug:
                 }
             )
             assert len(result2) == 3
+            assert isinstance(result2, dict)
             await asyncio.sleep(1)
 
         asyncio.run(test_multicall())

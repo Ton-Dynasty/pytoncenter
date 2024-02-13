@@ -1,10 +1,13 @@
-from .utils import crc16, string_to_bytes
+from __future__ import annotations
+
 import base64
 import ctypes
-from typing import TypedDict
+from typing import Optional, TypedDict, Union
 
-AddressInfo = TypedDict(
-    "AddressInfo",
+from .utils import crc16, string_to_bytes
+
+_AddressInfo = TypedDict(
+    "_AddressInfo",
     {
         "is_test_only": bool,
         "is_bounceable": bool,
@@ -14,7 +17,7 @@ AddressInfo = TypedDict(
 )
 
 
-def parse_friendly_address(addr_str: str) -> AddressInfo:
+def parse_friendly_address(addr_str: str) -> _AddressInfo:
     if len(addr_str) != 48:
         raise Exception("User-friendly address should contain strictly 48 characters")
 
@@ -62,7 +65,7 @@ class Address:
     NON_BOUNCEABLE_TAG = 0x51
     TEST_FLAG = 0x80
 
-    def __init__(self, any_form: str):
+    def __init__(self, any_form: Union[str, Address]):
         if any_form is None:
             raise Exception("Invalid address")
 
@@ -142,10 +145,10 @@ class Address:
 
     def to_string(
         self,
-        is_user_friendly: bool = None,
-        is_url_safe: bool = None,
-        is_bounceable: bool = None,
-        is_test_only: bool = None,
+        is_user_friendly: Optional[bool] = None,
+        is_url_safe: Optional[bool] = None,
+        is_bounceable: Optional[bool] = None,
+        is_test_only: Optional[bool] = None,
     ) -> str:
         if is_user_friendly is None:
             is_user_friendly = self._is_user_friendly

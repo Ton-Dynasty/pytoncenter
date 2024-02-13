@@ -1,20 +1,26 @@
-import os
-from tonpy import Cell
-from typing import Dict, List, Optional, Union, Literal, Tuple, Coroutine, Iterable, OrderedDict, Any, overload
-import aiohttp
 import asyncio
-from .types import *
-import warnings
+import os
 import uuid
+import warnings
+from typing import Any, Dict, List, Literal, Optional, OrderedDict, Tuple, Union
+
+import aiohttp
+from tonpy import Cell
+
+from pytoncenter.exception import TonException
+from pytoncenter.multicall import Multicallable
+
+from .types import *
 
 
-class TonException(Exception):
-    def __init__(self, code: int):
-        self.code = code
-
-
-class AsyncTonCenterClient:
-    def __init__(self, network: Union[Literal["mainnet"], Literal["testnet"]], *, custom_api_key: Optional[str] = None, custom_base_url: Optional[str] = None) -> None:
+class AsyncTonCenterClientV2(Multicallable):
+    def __init__(
+        self,
+        network: Union[Literal["mainnet"], Literal["testnet"]],
+        *,
+        custom_api_key: Optional[str] = None,
+        custom_base_url: Optional[str] = None,
+    ) -> None:
         api_key = os.getenv("TONCENTER_API_KEY", custom_api_key)
         # show warning if api_key is None
         if not api_key:
@@ -70,17 +76,21 @@ class AsyncTonCenterClient:
             raise TonException(result["code"])
         return result["result"]
 
-    async def _async_get(self, handler: str, query: Optional[Dict[str, str]] = None):
+    async def _async_get(self, handler: str, query: Optional[Dict[str, Any]] = None):
         url = f"{self.base_url}/{handler}"
         async with aiohttp.ClientSession() as session:
             params = {k: v for k, v in query.items() if v is not None} if query is not None else None
             async with session.get(url=url, headers=self._get_request_headers(), params=params) as response:
                 return await self._parse_response(response)
 
-    async def _async_post(self, handler: str, payload: Dict[str, str]):
+    async def _async_post(self, handler: str, payload: Dict[str, Any]):
         url = f"{self.base_url}/{handler}"
         async with aiohttp.ClientSession() as session:
-            async with session.post(url=url, headers=self._get_request_headers(), json={k: v for k, v in payload.items() if v is not None}) as response:
+            async with session.post(
+                url=url,
+                headers=self._get_request_headers(),
+                json={k: v for k, v in payload.items() if v is not None},
+            ) as response:
                 return await self._parse_response(response)
 
     async def get_address_information(self, address: str) -> WalletInformation:
@@ -135,7 +145,14 @@ class AsyncTonCenterClient:
     async def get_consensus_block(self) -> ConsensusBlock:
         return await self._async_get("getConsensusBlock")
 
-    async def lookup_block(self, workchain: int, shard: int, seqno: Optional[int] = None, lt: Optional[int] = None, unixtime: Optional[int] = None):
+    async def lookup_block(
+        self,
+        workchain: int,
+        shard: int,
+        seqno: Optional[int] = None,
+        lt: Optional[int] = None,
+        unixtime: Optional[int] = None,
+    ):
         query = {"workchain": workchain, "shard": shard}
         if seqno is not None:
             query["seqno"] = seqno
@@ -172,7 +189,14 @@ class AsyncTonCenterClient:
             query["count"] = count
         return await self._async_get("getBlockTransactions", query=query)
 
-    async def get_block_header(self, workchain: int, shard: int, seqno: int, root_hash: Optional[str] = None, file_hash: Optional[str] = None):
+    async def get_block_header(
+        self,
+        workchain: int,
+        shard: int,
+        seqno: int,
+        root_hash: Optional[str] = None,
+        file_hash: Optional[str] = None,
+    ):
         query = {"workchain": workchain, "shard": shard, "seqno": seqno}
         if root_hash is not None:
             query["root_hash"] = root_hash
@@ -207,23 +231,40 @@ class AsyncTonCenterClient:
         """
         assert limit is None or limit <= 100, "Limit must be less than or equal to 100"
         assert (begin_lt != 0 and hash != "") or (begin_lt == 0 and hash == ""), "begin_lt and hash must be specified together"
-        return await self._async_get("getTransactions", {"address": address, "limit": limit, "lt": begin_lt, "hash": hash, "to_lt": latest_lt, "archival": int(archival)})
+        return await self._async_get(
+            "getTransactions",
+            {
+                "address": address,
+                "limit": limit,
+                "lt": begin_lt,
+                "hash": hash,
+                "to_lt": latest_lt,
+                "archival": int(archival),
+            },
+        )
 
     async def try_locate_tx(self, source: str, destination: str, created_lt: int) -> Tx:
-        return await self._async_get("tryLocateTx", {"source": source, "destination": destination, "created_lt": created_lt})
+        return await self._async_get(
+            "tryLocateTx",
+            {"source": source, "destination": destination, "created_lt": created_lt},
+        )
 
     async def try_locate_result_tx(self, source: str, destination: str, created_lt: int) -> Tx:
-        return await self._async_get("tryLocateResultTx", {"source": source, "destination": destination, "created_lt": created_lt})
+        return await self._async_get(
+            "tryLocateResultTx",
+            {"source": source, "destination": destination, "created_lt": created_lt},
+        )
 
     async def try_locate_source_tx(self, source: str, destination: str, created_lt: int) -> Tx:
-        return await self._async_get("tryLocateSourceTx", {"source": source, "destination": destination, "created_lt": created_lt})
+        return await self._async_get(
+            "tryLocateSourceTx",
+            {"source": source, "destination": destination, "created_lt": created_lt},
+        )
 
     async def get_config_param(self, config_id: int, seqno: Optional[int] = None):
         return await self._async_get("getConfigParam", {"config_id": config_id, "seqno": seqno})
 
-    async def run_get_method(self, address: str, method_name: str, params: OrderedDict[str, Any]) -> GetMethodResult:
-        # serialize params into List[List[param name, param value]]
-        stack = self._serialize(params)
+    async def run_get_method(self, address: str, method_name: str, stack: List[Tuple[str, Any]] = []) -> GetMethodResult:
         result = await self._async_post("runGetMethod", {"address": address, "method": method_name, "stack": stack})
         if result.get("@type") == "smc.runResult" and "stack" in result:
             r: Dict[str, Any] = result["stack"]
@@ -237,78 +278,51 @@ class AsyncTonCenterClient:
         return await self._async_post("sendBocReturnHash", {"boc": boc})
 
     async def send_query(self, address: str, body: str, init_code: str, init_data: str):
-        return await self._async_post("sendQuery", {"address": address, "body": body, "init_code": init_code, "init_data": init_data})
+        return await self._async_post(
+            "sendQuery",
+            {
+                "address": address,
+                "body": body,
+                "init_code": init_code,
+                "init_data": init_data,
+            },
+        )
 
-    async def estimate_fee(self, address: str, body: Union[str, Cell], init_code: str, init_data: str, ignore_chksig: bool = True) -> EstimateResult:
+    async def estimate_fee(
+        self,
+        address: str,
+        body: Union[str, Cell],
+        init_code: str,
+        init_data: str,
+        ignore_chksig: bool = True,
+    ) -> EstimateResult:
         if isinstance(body, Cell):
             body = body.to_boc()
-        return await self._async_post("estimateFee", {"address": address, "body": body, "init_code": init_code, "init_data": init_data, "ignore_chksig": int(ignore_chksig)})
-
-    async def json_rpc(self, method: str, params: Dict[str, Any], id: Optional[int] = None, jsonrpc: Optional[str] = "2.0"):
-        id = uuid.uuid4().int if id is None else id
-        return await self._async_post("jsonRpc", {"method": method, "params": params, "id": id, "jsonrpc": jsonrpc})
-
-    @overload
-    async def multicall(self, *coros: Coroutine) -> List[Any]: ...
-
-    @overload
-    async def multicall(self, *coros: List[Coroutine]) -> List[Any]: ...
-
-    @overload
-    async def multicall(self, *coros: Dict[str, Coroutine]) -> Dict[str, Any]: ...
-
-    async def multicall(self, *coros: Union[Coroutine, List[Coroutine], Dict[str, Coroutine]]):
-        """
-        Example1
-        -------
-        ```
-        client = AsyncTonCenterClient(network="testnet")
-        result = await client.execute([
-            client.get_address_information("address1"),
-            client.get_address_information("address2"),
-        ])
-        print(result)
-        ```
-
-        Example2
-        -------
-        ```
-        client = AsyncTonCenterClient(network="testnet")
-        result = await client.execute(
-            client.get_address_balance("address1"),
-            client.run_get_method("kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A", "get_jetton_data", {})
+        return await self._async_post(
+            "estimateFee",
+            {
+                "address": address,
+                "body": body,
+                "init_code": init_code,
+                "init_data": init_data,
+                "ignore_chksig": int(ignore_chksig),
+            },
         )
-        print(result)
-        ```
 
-        Example3
-        -------
-        ```
-        client = AsyncTonCenterClient(network="testnet")
-        result = await client.execute({
-            "task1": client.get_address_balance("address1"),
-            "task2": client.run_get_method("kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A", "get_jetton_data", {})
-        })
-        print(result)
-        ```
-        """
+    async def json_rpc(
+        self,
+        method: str,
+        params: Dict[str, Any],
+        id: Optional[int] = None,
+        jsonrpc: Optional[str] = "2.0",
+    ):
+        id = uuid.uuid4().int if id is None else id
+        return await self._async_post(
+            "jsonRpc",
+            {"method": method, "params": params, "id": id, "jsonrpc": jsonrpc},
+        )
 
-        assert isinstance(coros, Iterable) or isinstance(coros, Coroutine), "Invalid argument type"
-        if not coros:
-            return []
-
-        if isinstance(coros[0], dict):
-            tasks = [asyncio.create_task(coro, name=name) for name, coro in coros[0].items()]
-            results = await asyncio.gather(*tasks)
-            return {task.get_name(): result for task, result in zip(tasks, results)}
-        if isinstance(coros[0], Iterable):
-            tasks = [asyncio.create_task(coro) for coro in coros[0]]
-            return await asyncio.gather(*tasks)
-        else:
-            tasks = [asyncio.create_task(coro) for coro in coros]
-            return await asyncio.gather(*tasks)
-
-    async def subscribeTx(self, address: str, interval_in_second: float = 1.0, limit: int = 20):
+    async def subscribe_tx(self, address: str, interval_in_second: float = 1.0, limit: int = 20):
         """
         subscribeTx returns a generator that yields transactions of the address
 
@@ -380,10 +394,17 @@ class AsyncTonCenterClient:
                     "in_msg": _tx["in_msg"],
                     "children": [],
                 }
-                tasks = [get_children_tx(source=msg["source"], destination=msg["destination"], created_lt=int(msg["created_lt"])) for msg in _tx["out_msgs"]]
+                tasks = [
+                    get_children_tx(
+                        source=msg["source"],
+                        destination=msg["destination"],
+                        created_lt=int(msg["created_lt"]),
+                    )
+                    for msg in _tx["out_msgs"]
+                ]
                 _trace["children"] = [child_tx for child_tx in await asyncio.gather(*tasks) if child_tx is not None]
                 return _trace
-            except TonException as e:
+            except TonException:
                 return None
 
         output: TraceTx = {
@@ -399,7 +420,14 @@ class AsyncTonCenterClient:
             "children": [],
         }
 
-        tasks = [get_children_tx(source=msg["source"], destination=msg["destination"], created_lt=int(msg["created_lt"])) for msg in root_tx["out_msgs"]]
+        tasks = [
+            get_children_tx(
+                source=msg["source"],
+                destination=msg["destination"],
+                created_lt=int(msg["created_lt"]),
+            )
+            for msg in root_tx["out_msgs"]
+        ]
         output["children"] = [child_tx for child_tx in await asyncio.gather(*tasks) if child_tx is not None]
 
         return output

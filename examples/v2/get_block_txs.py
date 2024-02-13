@@ -1,10 +1,10 @@
-from pytoncenter.api import AsyncTonCenterClient
+from pytoncenter.v2.api import AsyncTonCenterClientV2
 import asyncio
 from pprint import pprint
 
 
 async def main():
-    client = AsyncTonCenterClient(network="testnet")
+    client = AsyncTonCenterClientV2(network="testnet")
     info = await client.get_masterchain_info()
     seqno = info["last"]["seqno"]
     shards = await client.get_shards(seqno)

@@ -1,10 +1,12 @@
-from pytoncenter.api import AsyncTonCenterClient
-from tonpy import begin_cell
 import asyncio
+
+from tonpy import begin_cell
+
+from pytoncenter.v2.api import AsyncTonCenterClientV2
 
 
 async def main():
-    client = AsyncTonCenterClient(network="testnet")
+    client = AsyncTonCenterClientV2(network="testnet")
     result = await client.multicall(
         client.get_address_information("kQA_NyEP4fSvLS7hzr2z7SKL5NGa67JrykHJjOrvS6XwtoXa"),
         client.get_address_balance("kQA_NyEP4fSvLS7hzr2z7SKL5NGa67JrykHJjOrvS6XwtoXa"),

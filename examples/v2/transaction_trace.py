@@ -1,8 +1,8 @@
-from pytoncenter.api import AsyncTonCenterClient
+from pytoncenter.v2.api import AsyncTonCenterClientV2
 from pytoncenter.address import Address
 import asyncio
 import json
-from pytoncenter.tools import pretty_print_trace_tx, create_named_mapping_func
+from pytoncenter.v2.tools import pretty_print_trace_tx, create_named_mapping_func
 
 
 """
@@ -16,7 +16,7 @@ https://testnet.tonviewer.com/transaction/0f8d6b47a00d4914cb447b34cbce42e9e40c1d
 
 async def main():
     # Query transaction
-    client = AsyncTonCenterClient(network="testnet")
+    client = AsyncTonCenterClientV2(network="testnet")
     txs = await client.get_transactions(
         address="kQAreQ23eabjRO5glLCbhZ4KxQ9SOIjtw2eM2PuEXXhIZeh3",
         limit=1,

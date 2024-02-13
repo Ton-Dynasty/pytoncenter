@@ -1,12 +1,10 @@
 from pytoncenter.address import Address
 import asyncio
-from pytoncenter.api import AsyncTonCenterClient
+from pytoncenter.v2.api import AsyncTonCenterClientV2
 
 
 async def main():
-    raw_address_str = (
-        "0:2e56d1faf0f46433caac31487aef479c3593edaace5b00d177303e1dbfe7816f"
-    )
+    raw_address_str = "0:2e56d1faf0f46433caac31487aef479c3593edaace5b00d177303e1dbfe7816f"
     friendly_address_str = "EQAuVtH68PRkM8qsMUh670ecNZPtqs5bANF3MD4dv-eBb2vD"
     bounceable_address_str = "EQAuVtH68PRkM8qsMUh670ecNZPtqs5bANF3MD4dv+eBb2vD"
     bounceable_address_str_url = "EQAuVtH68PRkM8qsMUh670ecNZPtqs5bANF3MD4dv-eBb2vD"
@@ -16,7 +14,7 @@ async def main():
     test_address_str = bounceable_address_str_url
     addr = Address(test_address_str)
 
-    client = AsyncTonCenterClient(network="mainnet")
+    client = AsyncTonCenterClientV2(network="mainnet")
     result = await client.detect_address(test_address_str)
     print("From detect_address:")
     print(f"Raw Form: {result['raw_form']}")
@@ -53,10 +51,7 @@ async def main():
         assert addr.is_user_friendly == False, "User friendly mismatch!"
         assert addr.is_bounceable == False, "Bounceable mismatch!"
 
-    if (
-        test_address_str == result["non_bounceable"]["b64url"]
-        or test_address_str == result["bounceable"]["b64url"]
-    ):
+    if test_address_str == result["non_bounceable"]["b64url"] or test_address_str == result["bounceable"]["b64url"]:
         assert addr.is_url_safe == True, "URL safe mismatch!"
     else:
         assert addr.is_url_safe == False, "URL safe mismatch!"
