@@ -1,21 +1,22 @@
 from __future__ import annotations
-from tonpy import CellSlice
+
 from abc import ABC, abstractmethod
+from typing import Generic, Optional, TypeVar
+
+from tonpy import CellSlice
+
 from pytoncenter.address import Address
 from pytoncenter.utils import get_opcode
-from typing import Optional, TypeVar, Generic
 
 T = TypeVar("T", bound="BaseMessage")
 
 
 class BaseMessage(ABC, Generic[T]):
+    OPCODE = ""
+
     @property
     def name(self) -> str:
         return self.__class__.__name__
-
-    @property
-    def OPCODE(self) -> str:
-        return ""
 
     @classmethod
     def _preparse(cls, cs: CellSlice) -> CellSlice:
