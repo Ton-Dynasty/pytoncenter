@@ -28,9 +28,7 @@ class AsyncTonCenterClientV2(Multicallable):
                 "API key is not provided. TonCenter API is rate limited to 1 request per second. Suggesting providing it in environment variable `TONCENTER_API_KEY` or custom_api_key to increase the rate limit.",
                 RuntimeWarning,
             )
-        assert (network in ["mainnet", "testnet"]) or (
-            custom_base_url is not None
-        ), "Network or custom_base_url must be provided"
+        assert (network in ["mainnet", "testnet"]) or (custom_base_url is not None), "Network or custom_base_url must be provided"
         if custom_base_url is not None:
             self.base_url = custom_base_url
         else:
@@ -81,14 +79,8 @@ class AsyncTonCenterClientV2(Multicallable):
     async def _async_get(self, handler: str, query: Optional[Dict[str, Any]] = None):
         url = f"{self.base_url}/{handler}"
         async with aiohttp.ClientSession() as session:
-            params = (
-                {k: v for k, v in query.items() if v is not None}
-                if query is not None
-                else None
-            )
-            async with session.get(
-                url=url, headers=self._get_request_headers(), params=params
-            ) as response:
+            params = {k: v for k, v in query.items() if v is not None} if query is not None else None
+            async with session.get(url=url, headers=self._get_request_headers(), params=params) as response:
                 return await self._parse_response(response)
 
     async def _async_post(self, handler: str, payload: Dict[str, Any]):
@@ -104,12 +96,8 @@ class AsyncTonCenterClientV2(Multicallable):
     async def get_address_information(self, address: str) -> WalletInformation:
         return await self._async_get("getAddressInformation", {"address": address})
 
-    async def get_extended_address_information(
-        self, address: str
-    ) -> ExtentedAddressInformation:
-        return await self._async_get(
-            "getExtendedAddressInformation", {"address": address}
-        )
+    async def get_extended_address_information(self, address: str) -> ExtentedAddressInformation:
+        return await self._async_get("getExtendedAddressInformation", {"address": address})
 
     async def get_wallet_information(self, address: str) -> WalletInformation:
         return await self._async_get("getWalletInformation", {"address": address})
@@ -127,9 +115,7 @@ class AsyncTonCenterClientV2(Multicallable):
         """
         return await self._async_get("getAddressState", {"address": address})
 
-    async def get_token_data(
-        self, address: str
-    ) -> Union[JettonMasterData, JettonWalletData, NFTCollectionData, NFTItemData]:
+    async def get_token_data(self, address: str) -> Union[JettonMasterData, JettonWalletData, NFTCollectionData, NFTItemData]:
         return await self._async_get("getTokenData", {"address": address})
 
     async def pack_address(self, address: str) -> str:
@@ -145,16 +131,12 @@ class AsyncTonCenterClientV2(Multicallable):
         return await self._async_get("getMasterchainInfo")
 
     async def get_masterchain_block_signatures(self, seq_no: int) -> BlockSignatures:
-        return await self._async_get(
-            "getMasterchainBlockSignatures", {"seq_no": seq_no}
-        )
+        return await self._async_get("getMasterchainBlockSignatures", {"seq_no": seq_no})
 
     async def get_shards(self, seqno: int) -> Shards:
         return await self._async_get("shards", {"seqno": seqno})
 
-    async def get_shard_block_proof(
-        self, workchain: int, shard: int, seqno: int, from_seqno: Optional[int] = None
-    ):
+    async def get_shard_block_proof(self, workchain: int, shard: int, seqno: int, from_seqno: Optional[int] = None):
         query = {"workchain": workchain, "shard": shard, "seqno": seqno}
         if from_seqno is not None:
             query["from_seqno"] = from_seqno
@@ -248,9 +230,7 @@ class AsyncTonCenterClientV2(Multicallable):
             The hash of the transaction to start getting transactions
         """
         assert limit is None or limit <= 100, "Limit must be less than or equal to 100"
-        assert (begin_lt != 0 and hash != "") or (
-            begin_lt == 0 and hash == ""
-        ), "begin_lt and hash must be specified together"
+        assert (begin_lt != 0 and hash != "") or (begin_lt == 0 and hash == ""), "begin_lt and hash must be specified together"
         return await self._async_get(
             "getTransactions",
             {
@@ -269,35 +249,25 @@ class AsyncTonCenterClientV2(Multicallable):
             {"source": source, "destination": destination, "created_lt": created_lt},
         )
 
-    async def try_locate_result_tx(
-        self, source: str, destination: str, created_lt: int
-    ) -> Tx:
+    async def try_locate_result_tx(self, source: str, destination: str, created_lt: int) -> Tx:
         return await self._async_get(
             "tryLocateResultTx",
             {"source": source, "destination": destination, "created_lt": created_lt},
         )
 
-    async def try_locate_source_tx(
-        self, source: str, destination: str, created_lt: int
-    ) -> Tx:
+    async def try_locate_source_tx(self, source: str, destination: str, created_lt: int) -> Tx:
         return await self._async_get(
             "tryLocateSourceTx",
             {"source": source, "destination": destination, "created_lt": created_lt},
         )
 
     async def get_config_param(self, config_id: int, seqno: Optional[int] = None):
-        return await self._async_get(
-            "getConfigParam", {"config_id": config_id, "seqno": seqno}
-        )
+        return await self._async_get("getConfigParam", {"config_id": config_id, "seqno": seqno})
 
-    async def run_get_method(
-        self, address: str, method_name: str, params: OrderedDict[str, Any]
-    ) -> GetMethodResult:
+    async def run_get_method(self, address: str, method_name: str, params: Union[OrderedDict[str, Any], Dict[str, Any]]) -> GetMethodResult:
         # serialize params into List[List[param type, param value]]
         stack = self._serialize(params)
-        result = await self._async_post(
-            "runGetMethod", {"address": address, "method": method_name, "stack": stack}
-        )
+        result = await self._async_post("runGetMethod", {"address": address, "method": method_name, "stack": stack})
         if result.get("@type") == "smc.runResult" and "stack" in result:
             r: Dict[str, Any] = result["stack"]
             return [{"type": r[i][0], "value": r[i][1]} for i in range(len(r))]
@@ -354,9 +324,7 @@ class AsyncTonCenterClientV2(Multicallable):
             {"method": method, "params": params, "id": id, "jsonrpc": jsonrpc},
         )
 
-    async def subscribe_tx(
-        self, address: str, interval_in_second: float = 1.0, limit: int = 20
-    ):
+    async def subscribe_tx(self, address: str, interval_in_second: float = 1.0, limit: int = 20):
         """
         subscribeTx returns a generator that yields transactions of the address
 
@@ -380,9 +348,7 @@ class AsyncTonCenterClientV2(Multicallable):
             try:
                 if cur_lt is not None:
                     await asyncio.sleep(interval_in_second)
-                results = await self.get_transactions(
-                    address, limit=limit, latest_lt=cur_lt, archival=False
-                )
+                results = await self.get_transactions(address, limit=limit, latest_lt=cur_lt, archival=False)
                 if not results:
                     continue
 
@@ -415,13 +381,9 @@ class AsyncTonCenterClientV2(Multicallable):
         pprint(trace)
         """
 
-        async def get_children_tx(
-            source: str, destination: str, created_lt: int
-        ) -> Optional[TraceTx]:
+        async def get_children_tx(source: str, destination: str, created_lt: int) -> Optional[TraceTx]:
             try:
-                _tx = await self.try_locate_tx(
-                    source=source, destination=destination, created_lt=created_lt
-                )
+                _tx = await self.try_locate_tx(source=source, destination=destination, created_lt=created_lt)
                 _trace: TraceTx = {
                     "@type": _tx["@type"],
                     "address": _tx["address"],
@@ -442,11 +404,7 @@ class AsyncTonCenterClientV2(Multicallable):
                     )
                     for msg in _tx["out_msgs"]
                 ]
-                _trace["children"] = [
-                    child_tx
-                    for child_tx in await asyncio.gather(*tasks)
-                    if child_tx is not None
-                ]
+                _trace["children"] = [child_tx for child_tx in await asyncio.gather(*tasks) if child_tx is not None]
                 return _trace
             except TonException:
                 return None
@@ -472,10 +430,6 @@ class AsyncTonCenterClientV2(Multicallable):
             )
             for msg in root_tx["out_msgs"]
         ]
-        output["children"] = [
-            child_tx
-            for child_tx in await asyncio.gather(*tasks)
-            if child_tx is not None
-        ]
+        output["children"] = [child_tx for child_tx in await asyncio.gather(*tasks) if child_tx is not None]
 
         return output

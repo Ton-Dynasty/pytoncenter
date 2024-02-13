@@ -1,6 +1,8 @@
-from pytoncenter.v2.api import AsyncTonCenterClientV2
-from tonpy import begin_cell
 import asyncio
+
+from tonpy import begin_cell
+
+from pytoncenter.v2.api import AsyncTonCenterClientV2
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -26,6 +28,7 @@ class TestDebug:
                 client.get_address_balance("kQA_NyEP4fSvLS7hzr2z7SKL5NGa67JrykHJjOrvS6XwtoXa"),
             )
             assert len(result) == 2
+            assert isinstance(result, list)
             await asyncio.sleep(1)
 
             result1 = await client.multicall(
@@ -36,6 +39,7 @@ class TestDebug:
                 ]
             )
             assert len(result1) == 3
+            assert isinstance(result1, list)
             await asyncio.sleep(1)
 
             result2 = await client.multicall(
@@ -46,6 +50,7 @@ class TestDebug:
                 }
             )
             assert len(result2) == 3
+            assert isinstance(result2, dict)
             await asyncio.sleep(1)
 
         asyncio.run(test_multicall())

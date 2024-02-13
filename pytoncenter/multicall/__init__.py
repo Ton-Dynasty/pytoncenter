@@ -1,5 +1,5 @@
-from typing import List, Dict, Coroutine, Any, Union, overload, Iterable
 import asyncio
+from typing import Any, Coroutine, Dict, Iterable, List, overload
 
 
 class Multicallable:
@@ -7,18 +7,34 @@ class Multicallable:
     async def multicall(self, *coros: Coroutine[Any, Any, Any]) -> List[Any]: ...
 
     @overload
-    async def multicall(self, *coros: Dict[str, Coroutine[Any, Any, Any]]) -> Dict[str, Any]: ...
+    async def multicall(self, coros: Dict[str, Coroutine[Any, Any, Any]]) -> Dict[str, Any]: ...
 
     @overload
-    async def multicall(self, *coros: List[Coroutine[Any, Any, Any]]) -> List[Any]: ...
+    async def multicall(self, coros: List[Coroutine[Any, Any, Any]]) -> List[Any]: ...
 
-    async def multicall(self, *coros: Union[Coroutine[Any, Any, Any], List[Coroutine[Any, Any, Any]], Dict[str, Coroutine[Any, Any, Any]]]):
+    async def multicall(self, *args, **kwargs):
         """
+        With multicall, you can execute multiple async function calls by this method.
+        This function will return a list of results or a dictionary of results if you pass a dictionary of coroutines.
+
+
+        Code Snippet
+        ------------
+        ```python
+        client = get_client("v2 or v3", network="testnet or mainnet")
+        result = await client.multicall(
+            any_asnyc_func1(param1, param2...),
+            any_asnyc_func2(param1, param2...),
+            any_asnyc_func3(param1, param2...),
+        )
+        print(result)
+        ```
+
         Example1
         -------
-        ```
-        client = AsyncTonCenterClient(network="testnet")
-        result = await client.execute([
+        ```python
+        client = get_client("v2", network="testnet")
+        result = await client.multicall([
             client.get_address_information("address1"),
             client.get_address_information("address2"),
         ])
@@ -27,9 +43,9 @@ class Multicallable:
 
         Example2
         -------
-        ```
-        client = AsyncTonCenterClient(network="testnet")
-        result = await client.execute(
+        ```python
+        client = get_client("v2", network="testnet")
+        result = await client.multicall(
             client.get_address_balance("address1"),
             client.run_get_method("kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A", "get_jetton_data", {})
         )
@@ -38,9 +54,9 @@ class Multicallable:
 
         Example3
         -------
-        ```
-        client = AsyncTonCenterClient(network="testnet")
-        result = await client.execute({
+        ```python
+        client = get_client("v2", network="testnet")
+        result = await client.multicall({
             "task1": client.get_address_balance("address1"),
             "task2": client.run_get_method("kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A", "get_jetton_data", {})
         })
@@ -48,17 +64,19 @@ class Multicallable:
         ```
         """
 
-        assert isinstance(coros, dict) or isinstance(coros, Iterable) or isinstance(coros, Coroutine), "Invalid argument type"
-        if not coros:
-            return []
+        if len(args) == 1 and isinstance(args[0], (dict, list)):
+            coros = args[0]
+        else:
+            # check if the arguments are coroutines
+            assert all([asyncio.iscoroutine(coro) for coro in args]), "All element should be Coroutines"
+            coros = args
 
-        if isinstance(coros[0], dict):
-            tasks = [asyncio.create_task(coro, name=name) for name, coro in coros[0].items()]  # type: ignore
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            return {task.get_name(): result for task, result in zip(tasks, results)}
-        if isinstance(coros[0], Iterable):
-            tasks = [asyncio.create_task(coro) for coro in coros[0]]  # type: ignore
+        if isinstance(coros, dict):
+            tasks = {name: asyncio.create_task(coro) for name, coro in coros.items()}
+            results = await asyncio.gather(*tasks.values(), return_exceptions=True)
+            return {name: result for name, result in zip(tasks.keys(), results)}
+        elif isinstance(coros, Iterable):
+            tasks = [asyncio.create_task(coro) for coro in coros]
             return await asyncio.gather(*tasks, return_exceptions=True)
         else:
-            tasks = [asyncio.create_task(coro) for coro in coros]  # type: ignore
-            return await asyncio.gather(*tasks, return_exceptions=True)
+            raise ValueError("Invalid argument type")

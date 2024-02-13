@@ -69,17 +69,22 @@ Alan WalletV4R2 -> Jetton Master (Mint:1) [1.0 TON]
     └── Jetton Wallet -> Alan WalletV4R2 (0xd53276db) [0.853806 TON]
 ```
 
-## Full Examples (V3)
+## Examples (V3)
+1. [Get Transaction Traces] - Waiting for TONCENTER to fix their api
+2. [Decode Jetton Get Method Result](./examples/v3/decode_jetton_data.py)
+3. [Decode Custom Get Method Result](./examples/v3/decode_custom_data.py)
+4. [Multicall](./examples/v3/multicall.py)
+5. [Subscribe transactions for address](./examples/v3/subscribe_jetton_wallet.py)
 
-
-
-## Full Examples (V2)
-1. [Get Transaction Flows](./examples/v2/transaction_trace.py)
+## Examples (V2)
+1. [Get Transaction Traces](./examples/v2/transaction_trace.py)
 2. [Decode Jetton Get Method Result](./examples/v2/decode_jetton_data.py)
 3. [Decode Custom Get Method Result](./examples/v2/decode_custom_data.py)
-4. [Execute Parallelly](./examples/v2/execute_many.py)
+4. [Execute Parallelly](./examples/v2/multicall.py)
 5. [Subscribe transactions for address](./examples/v2/subscribe_jetton_wallet.py)
-6. [Address Parser](./examples/v2/address.py)
+
+## Examples (Address)
+1. [Address Parser](./examples/v2/address.py)
 
 
 ## Development Guide
