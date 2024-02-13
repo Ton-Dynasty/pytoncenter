@@ -25,6 +25,9 @@ async def main():
     output = OracleMetaDataDecoder.decode(result)
     pprint(output, width=120)
 
+    quote_token = await client.get_jetton_masters(GetJettonMastersRequest(address=output["quote_asset_address"]))
+    pprint(quote_token, width=120)
+
     print("====================================")
 
     # call get method with parameters

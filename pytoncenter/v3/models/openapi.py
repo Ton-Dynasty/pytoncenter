@@ -60,14 +60,37 @@ class JettonBurn(BaseModel):
     custom_payload: Optional[str] = Field(..., title="Custom Payload")
 
 
+class JettonContent(BaseModel):
+    uri: Optional[str] = Field(None, description="A URI pointing to JSON document with metadata. Used by 'Semi-chain content layout'. ASCII string.")
+    name: Optional[str] = Field(None, description="The name of the token - e.g. 'Example Coin'. UTF8 string.")
+    description: Optional[str] = Field(None, description="Describes the token - e.g. 'This is an example jetton for the TON network'. UTF8 string.")
+    image: Optional[str] = Field(None, description="A URI pointing to a jetton icon with mime type image. ASCII string.")
+    image_data: Optional[str] = Field(None, description="Either binary representation of the image for onchain layout or base64 for offchain layout.")
+    symbol: Optional[str] = Field(None, description="The symbol of the token - e.g. 'XMPL'. Used in the form 'You received 99 XMPL'. UTF8 string.")
+    decimals: Optional[int] = Field(
+        9,
+        description="The number of decimals the token uses - e.g. 8, means to divide the token amount by 100000000 to get its user representation, while 0 means that tokens are indivisible. If not specified, 9 is used by default. UTF8 encoded string with number from 0 to 255.",
+        ge=0,
+        le=255,
+    )
+    amount_style: Optional[Literal["n", "n-of-total", "%"]] = Field(
+        "n",
+        description="Needed by external applications to understand which format for displaying the number of jettons. 'n' - number of jettons (default value). 'n-of-total' - the number of jettons out of the total number of issued jettons. '%' - percentage of jettons from the total number of issued jettons.",
+    )
+    render_type: Optional[Literal["currency", "game"]] = Field(
+        "currency",
+        description="Needed by external applications to understand which group the jetton belongs to and how to display it. 'currency' - display as currency (default value). 'game' - display for games as NFT, considering the amount_style.",
+    )
+
+
 class JettonMaster(BaseModel):
     address: AddressLike = Field(..., title="Address")
-    total_supply: str = Field(..., title="Total Supply")
+    total_supply: int = Field(..., title="Total Supply")
     mintable: bool = Field(..., title="Mintable")
     admin_address: Optional[AddressLike] = Field(..., title="Admin Address")
-    last_transaction_lt: str = Field(..., title="Last Transaction Lt")
+    last_transaction_lt: int = Field(..., title="Last Transaction Lt")
     jetton_wallet_code_hash: str = Field(..., title="Jetton Wallet Code Hash")
-    jetton_content: Any = Field(..., title="Jetton Content")
+    jetton_content: Optional[JettonContent] = Field(None, title="Jetton Content")
     code_hash: str = Field(..., title="Code Hash")
     data_hash: str = Field(..., title="Data Hash")
 
