@@ -189,7 +189,8 @@ class AsyncTonCenterClientV3(Multicallable):
         while True:
             req = GetTransactionRequest(account=account, start_utime=cur_time, sort="asc", limit=20)
             txs = await self.get_transactions(req)
-            for tx in txs:
-                yield tx
-            cur_time = txs[-1].now
+            if len(txs) > 0:
+                for tx in txs:
+                    yield tx
+                cur_time = txs[-1].now + 1
             await asyncio.sleep(interval_in_second)

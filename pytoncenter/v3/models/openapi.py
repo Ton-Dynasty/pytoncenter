@@ -12,9 +12,6 @@ class AccountBalance(BaseModel):
     balance: str = Field(..., title="Balance")
 
 
-AccountStatus = Literal["uninit", "frozen", "active", "nonexist"]
-
-
 class BinaryComment(BaseModel):
     type: Literal["binary_comment"] = Field("binary_comment", title="Type")
     hex_comment: str = Field(..., title="Hex Comment")
@@ -170,7 +167,7 @@ class WalletInfo(BaseModel):
     wallet_id: Optional[int] = Field(..., title="Wallet Id")
     last_transaction_lt: Optional[str] = Field(..., title="Last Transaction Lt")
     last_transaction_hash: Optional[str] = Field(..., title="Last Transaction Hash")
-    status: AccountStatus
+    status: Literal["uninit", "frozen", "active", "nonexist"] = Field(..., title="Status")
 
 
 class Account(BaseModel):
@@ -180,14 +177,14 @@ class Account(BaseModel):
     last_transaction_lt: Optional[str] = Field(..., title="Last Transaction Lt")
     last_transaction_hash: Optional[str] = Field(..., title="Last Transaction Hash")
     frozen_hash: Optional[str] = Field(..., title="Frozen Hash")
-    status: AccountStatus
+    status: Literal["uninit", "frozen", "active", "nonexist"] = Field(..., title="Status")
 
 
 class AccountState(BaseModel):
     hash: str = Field(..., title="Hash")
     account: PyAddress = Field(..., title="Account")
     balance: str = Field(..., title="Balance")
-    account_status: AccountStatus
+    account_status: Literal["uninit", "frozen", "active", "nonexist"] = Field(..., title="Account Status")
     frozen_hash: Optional[str] = Field(..., title="Frozen Hash")
     code_hash: Optional[str] = Field(..., title="Code Hash")
     data_hash: Optional[str] = Field(..., title="Data Hash")
@@ -301,8 +298,8 @@ class Transaction(BaseModel):
     hash: str = Field(..., title="Hash")
     lt: str = Field(..., title="Lt")
     now: int = Field(..., title="Now")
-    orig_status: AccountStatus
-    end_status: AccountStatus
+    orig_status: Literal["uninit", "frozen", "active", "nonexist"] = Field(..., title="Orig Status")
+    end_status: Literal["uninit", "frozen", "active", "nonexist"] = Field(..., title="End Status")
     total_fees: str = Field(..., title="Total Fees")
     account_state_hash_before: str = Field(..., title="Account State Hash Before")
     account_state_hash_after: str = Field(..., title="Account State Hash After")

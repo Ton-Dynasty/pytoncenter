@@ -10,7 +10,7 @@ async def main():
     account_info = await client.get_account(req)
 
     # Check account status is active
-    if account_info.status == AccountStatus.active:
+    if account_info.status == "active":
         print("Account is active")
     else:
         raise Exception("Account is not active")
