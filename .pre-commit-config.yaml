@@ -27,3 +27,5 @@ repos:
     hooks:
       - id: black
         name: black
+        args:
+          - "--line-length=200"

@@ -41,53 +41,28 @@ PyDatetime = Annotated[
 PyAddress = Annotated[
     str,
     Address,
-    PlainSerializer(
-        lambda x: x.to_string(True, True, is_test_only=False), return_type=str
-    ),
+    PlainSerializer(lambda x: x.to_string(True, True, is_test_only=False), return_type=str),
     WithJsonSchema({"type": "string"}, mode="serialization"),
 ]
 
 
 class GetBlockRequest(BaseModel):
-    workchain: Optional[int] = Field(None, description="Block workchain")
-    shard: Optional[str] = Field(
-        None, description="Block shard id. Must be sent with workchain"
-    )
-    seqno: Optional[int] = Field(
-        None, description="Block block seqno. Must be sent with workchain and shard"
-    )
-    start_utime: Optional[PyDatetime] = Field(
-        None,
-        description="Query blocks with generation UTC timestamp after given timestamp",
-    )
-    end_utime: Optional[PyDatetime] = Field(
-        None,
-        description="Query blocks with generation UTC timestamp before given timestamp",
-    )
-    start_lt: Optional[int] = Field(
-        None, description="Query blocks with lt >= start_lt"
-    )
-    end_lt: Optional[int] = Field(None, description="Query blocks with lt <= end_lt")
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read.",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read."
-    )
-    sort: Literal["asc", "desc"] = Field(
-        "desc", description="Sort results by UTC timestamp"
-    )
+    workchain: Optional[int] = Field(default=None, description="Block workchain")
+    shard: Optional[str] = Field(default=None, description="Block shard id. Must be sent with workchain")
+    seqno: Optional[int] = Field(default=None, description="Block block seqno. Must be sent with workchain and shard")
+    start_utime: Optional[PyDatetime] = Field(default=None, description="Query blocks with generation UTC timestamp after given timestamp")
+    end_utime: Optional[PyDatetime] = Field(default=None, description="Query blocks with generation UTC timestamp before given timestamp")
+    start_lt: Optional[int] = Field(default=None, description="Query blocks with lt >= start_lt")
+    end_lt: Optional[int] = Field(default=None, description="Query blocks with lt <= end_lt")
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read.")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read.")
+    sort: Literal["asc", "desc"] = Field(default="desc", description="Sort results by UTC timestamp")
 
     @model_validator(mode="after")
     def check_times(cls, values: GetBlockRequest):
         start_utime, end_utime = values.start_utime, values.end_utime
         if start_utime and end_utime and start_utime > end_utime:
-            raise ValueError(
-                "\033[93mstart_utime must be earlier than end_utime\033[0m"
-            )
+            raise ValueError("\033[93mstart_utime must be earlier than end_utime\033[0m")
         return values
 
     @model_validator(mode="after")
@@ -101,13 +76,9 @@ class GetBlockRequest(BaseModel):
     def check_shard_and_seqno(cls, values: GetBlockRequest):
         shard, workchain, seqno = values.shard, values.workchain, values.seqno
         if shard and not workchain:
-            raise ValueError(
-                "\033[93mworkchain is required if shard is specified\033[0m"
-            )
+            raise ValueError("\033[93mworkchain is required if shard is specified\033[0m")
         if seqno and not (workchain and shard):
-            raise ValueError(
-                "\033[93mworkchain and shard are required if seqno is specified\033[0m"
-            )
+            raise ValueError("\033[93mworkchain and shard are required if seqno is specified\033[0m")
         return values
 
 
@@ -118,51 +89,19 @@ class GetMasterchainBlockShardsRequest(BaseModel):
 
 class GetTransactionRequest(BaseModel):
     workchain: Optional[int] = Field(default=None, description="Block workchain")
-    shard: Optional[str] = Field(
-        default=None, description="Block shard id. Must be sent with workchain"
-    )
-    seqno: Optional[int] = Field(
-        default=None,
-        description="Block block seqno. Must be sent with workchain and shard",
-    )
-    account: Optional[PyAddress] = Field(
-        default=None,
-        description="The account address to get transactions. Can be sent in hex, base64 or base64url form",
-    )
-    exclude_account: Optional[PyAddress] = Field(
-        default=None, description="Exclude transactions on specified account addresses"
-    )
-    hash: Optional[str] = Field(
-        default=None,
-        description="Transaction hash. Acceptable in hex, base64 and base64url forms",
-    )
+    shard: Optional[str] = Field(default=None, description="Block shard id. Must be sent with workchain")
+    seqno: Optional[int] = Field(default=None, description="Block block seqno. Must be sent with workchain and shard")
+    account: Optional[PyAddress] = Field(default=None, description="The account address to get transactions. Can be sent in hex, base64 or base64url form")
+    exclude_account: Optional[PyAddress] = Field(default=None, description="Exclude transactions on specified account addresses")
+    hash: Optional[str] = Field(default=None, description="Transaction hash. Acceptable in hex, base64 and base64url forms")
     lt: Optional[int] = Field(default=None, description="Transaction logical time")
-    start_utime: Optional[PyDatetime] = Field(
-        default=None,
-        description="Query blocks with generation UTC timestamp after given timestamp",
-    )
-    end_utime: Optional[PyDatetime] = Field(
-        default=None,
-        description="Query blocks with generation UTC timestamp before given timestamp",
-    )
-    start_lt: Optional[int] = Field(
-        default=None, description="Query blocks with lt >= start_lt"
-    )
-    end_lt: Optional[int] = Field(
-        default=None, description="Query blocks with lt <= end_lt"
-    )
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read.",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read."
-    )
-    sort: Literal["asc", "desc"] = Field(
-        "desc", description="Sort results by UTC timestamp"
-    )
+    start_utime: Optional[PyDatetime] = Field(default=None, description="Query blocks with generation UTC timestamp after given timestamp")
+    end_utime: Optional[PyDatetime] = Field(default=None, description="Query blocks with generation UTC timestamp before given timestamp")
+    start_lt: Optional[int] = Field(default=None, description="Query blocks with lt >= start_lt")
+    end_lt: Optional[int] = Field(default=None, description="Query blocks with lt <= end_lt")
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read.")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read.")
+    sort: Literal["asc", "desc"] = Field("desc", description="Sort results by UTC timestamp")
 
     @model_validator(mode="after")
     def check_times(cls, values: GetBlockRequest):
@@ -182,67 +121,32 @@ class GetTransactionRequest(BaseModel):
     def check_shard_and_seqno(cls, values: GetBlockRequest):
         shard, workchain, seqno = values.shard, values.workchain, values.seqno
         if shard and not workchain:
-            raise ValueError(
-                "\033[93mworkchain is required if shard is specified\033[0m"
-            )
+            raise ValueError("\033[93mworkchain is required if shard is specified\033[0m")
         if seqno and not (workchain and shard):
-            raise ValueError(
-                "\033[93mworkchain and shard are required if seqno is specified\033[0m"
-            )
+            raise ValueError("\033[93mworkchain and shard are required if seqno is specified\033[0m")
         return values
 
 
 class GetTransactionByMasterchainBlockRequest(BaseModel):
     seqno: int = Field(description="Masterchain block seqno")
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read.",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read."
-    )
-    sort: Literal["asc", "desc"] = Field(
-        default="desc", description="Sort results by UTC timestamp"
-    )
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read.")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read.")
+    sort: Literal["asc", "desc"] = Field(default="desc", description="Sort results by UTC timestamp")
 
 
 class GetTransactionByMessageRequest(BaseModel):
     direction: Literal["in", "out"] = Field(description="Message direction")
-    msg_hash: str = Field(
-        description="Message hash. Acceptable in hex, base64 and base64url forms"
-    )
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read.",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read."
-    )
+    msg_hash: str = Field(description="Message hash. Acceptable in hex, base64 and base64url forms")
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read.")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read.")
 
 
 class GetAdjacentTransactionsRequest(BaseModel):
-    hash: str = Field(
-        description="Transaction hash. Acceptable in hex, base64 and base64url forms"
-    )
-    direction: Literal["in", "out", "both"] = Field(
-        default="both", description="Message direction"
-    )
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read.",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read."
-    )
-    sort: Literal["asc", "desc", "none"] = Field(
-        default="desc", description="Sort results by UTC timestamp"
-    )
+    hash: str = Field(description="Transaction hash. Acceptable in hex, base64 and base64url forms")
+    direction: Literal["in", "out", "both"] = Field(default="both", description="Message direction")
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read.")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read.")
+    sort: Literal["asc", "desc", "none"] = Field(default="desc", description="Sort results by UTC timestamp")
 
 
 class GetTracesRequest(BaseModel):
@@ -258,135 +162,52 @@ class GetTracesRequest(BaseModel):
 
 
 class GetTransactionTraceRequest(BaseModel):
-    hash: str = Field(
-        description="Transaction hash. Acceptable in hex, base64 and base64url forms"
-    )
-    sort: Literal["none", "asc", "desc"] = Field(
-        "asc", description="Sort transactions by lt"
-    )
+    hash: str = Field(description="Transaction hash. Acceptable in hex, base64 and base64url forms")
+    sort: Literal["none", "asc", "desc"] = Field("asc", description="Sort transactions by lt")
 
 
 class GetMessagesRequest(BaseModel):
-    hash: Optional[str] = Field(
-        None, description="Message hash. Acceptable in hex, base64 and base64url forms"
-    )
-    source: Optional[PyAddress] = Field(
-        None,
-        description="The source account address. Can be sent in hex, base64 or base64url form",
-    )
-    destination: Optional[PyAddress] = Field(
-        None,
-        description="The destination account address. Can be sent in hex, base64 or base64url form",
-    )
-    body_hash: Optional[str] = Field(
-        None,
-        description="Message body hash. Acceptable in hex, base64 and base64url forms",
-    )
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read"
-    )
+    hash: Optional[str] = Field(default=None, description="Message hash. Acceptable in hex, base64 and base64url forms")
+    source: Optional[PyAddress] = Field(default=None, description="The source account address. Can be sent in hex, base64 or base64url form")
+    destination: Optional[PyAddress] = Field(default=None, description="The destination account address. Can be sent in hex, base64 or base64url form")
+    body_hash: Optional[str] = Field(default=None, description="Message body hash. Acceptable in hex, base64 and base64url forms")
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
 class GetNFTCollectionsRequest(BaseModel):
-    collection_address: Optional[PyAddress] = Field(
-        default=None,
-        description="NFT collection address. Must be sent in hex, base64 and base64url forms",
-    )
-    owner_address: Optional[PyAddress] = Field(
-        default=None,
-        description="NFT owner address. Must be sent in hex, base64 and base64url forms",
-    )
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read"
-    )
+    collection_address: Optional[PyAddress] = Field(default=None, description="NFT collection address. Must be sent in hex, base64 and base64url forms")
+    owner_address: Optional[PyAddress] = Field(default=None, description="NFT owner address. Must be sent in hex, base64 and base64url forms")
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
 class GetNFTItemsRequest(BaseModel):
-    address: Optional[PyAddress] = Field(
-        default=None,
-        description="NFT address. Must be sent in hex, base64 and base64url forms.",
-    )
-    owner_address: Optional[PyAddress] = Field(
-        default=None,
-        description="Address of NFT owner. Must be sent in hex, base64 and base64url forms",
-    )
-    collection_address: Optional[PyAddress] = Field(
-        default=None,
-        description="NFT collection address. Must be sent in hex, base64 and base64url forms",
-    )
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read"
-    )
+    address: Optional[PyAddress] = Field(default=None, description="NFT address. Must be sent in hex, base64 and base64url forms.")
+    owner_address: Optional[PyAddress] = Field(default=None, description="Address of NFT owner. Must be sent in hex, base64 and base64url forms")
+    collection_address: Optional[PyAddress] = Field(default=None, description="NFT collection address. Must be sent in hex, base64 and base64url forms")
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
 class GetNFTTransfersRequest(BaseModel):
-    address: Optional[PyAddress] = Field(
-        default=None,
-        description="Address of NFT owner. Must be sent in hex, base64 and base64url forms",
-    )
-    item_address: Optional[PyAddress] = Field(
-        default=None,
-        description="NFT item address. Must be sent in hex, base64 and base64url forms",
-    )
-    collection_address: Optional[PyAddress] = Field(
-        default=None,
-        description="NFT collection address. Must be sent in hex, base64 and base64url forms",
-    )
-    direction: Literal["in", "out", "both"] = Field(
-        default="both", description="Direction transactions by lt"
-    )
-    start_utime: Optional[PyDatetime] = Field(
-        default=None,
-        description="Query transactions with generation UTC timestamp after given timestamp",
-    )
-    end_utime: Optional[PyDatetime] = Field(
-        default=None,
-        description="Query transactions with generation UTC timestamp before given timestamp",
-    )
-    start_lt: Optional[int] = Field(
-        default=None, description="Query transactions with lt >= start_lt"
-    )
-    end_lt: Optional[int] = Field(
-        default=None, description="Query transactions with lt <= end_lt"
-    )
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read"
-    )
-    sort: Literal["asc", "desc"] = Field(
-        default="desc", description="Sort results by UTC timestamp"
-    )
+    address: Optional[PyAddress] = Field(default=None, description="Address of NFT owner. Must be sent in hex, base64 and base64url forms")
+    item_address: Optional[PyAddress] = Field(default=None, description="NFT item address. Must be sent in hex, base64 and base64url forms")
+    collection_address: Optional[PyAddress] = Field(default=None, description="NFT collection address. Must be sent in hex, base64 and base64url forms")
+    direction: Literal["in", "out", "both"] = Field(default="both", description="Direction transactions by lt")
+    start_utime: Optional[PyDatetime] = Field(default=None, description="Query transactions with generation UTC timestamp after given timestamp")
+    end_utime: Optional[PyDatetime] = Field(default=None, description="Query transactions with generation UTC timestamp before given timestamp")
+    start_lt: Optional[int] = Field(default=None, description="Query transactions with lt >= start_lt")
+    end_lt: Optional[int] = Field(default=None, description="Query transactions with lt <= end_lt")
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
+    sort: Literal["asc", "desc"] = Field(default="desc", description="Sort results by UTC timestamp")
 
     @model_validator(mode="after")
     def check_times(cls, values: GetNFTTransfersRequest):
         start_utime, end_utime = values.start_utime, values.end_utime
         if start_utime and end_utime and start_utime > end_utime:
-            raise ValueError(
-                "\033[93mstart_utime must be earlier than end_utime\033[0m"
-            )
+            raise ValueError("\033[93mstart_utime must be earlier than end_utime\033[0m")
         return values
 
     @model_validator(mode="after")
@@ -398,99 +219,38 @@ class GetNFTTransfersRequest(BaseModel):
 
 
 class GetJettonMastersRequest(BaseModel):
-    address: Optional[PyAddress] = Field(
-        default=None,
-        description="Jetton Master address. Must be sent in hex, base64 and base64url forms",
-    )
-    admin_address: Optional[PyAddress] = Field(
-        default=None,
-        description="Address of Jetton Master's admin. Must be sent in hex, base64 and base64url forms",
-    )
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read"
-    )
+    address: Optional[PyAddress] = Field(default=None, description="Jetton Master address. Must be sent in hex, base64 and base64url forms")
+    admin_address: Optional[PyAddress] = Field(default=None, description="Address of Jetton Master's admin. Must be sent in hex, base64 and base64url forms")
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
 class GetJettonWalletsRequest(BaseModel):
-    address: Optional[PyAddress] = Field(
-        default=None,
-        description="Jetton wallet address. Must be sent in hex, base64 and base64url forms",
-    )
-    owner_address: Optional[PyAddress] = Field(
-        default=None,
-        description="Address of Jetton wallet's owner. Must be sent in hex, base64 and base64url forms",
-    )
-    jetton_address: Optional[PyAddress] = Field(
-        default=None,
-        description="Jetton Master. Must be sent in hex, base64 and base64url forms",
-    )
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read"
-    )
+    address: Optional[PyAddress] = Field(default=None, description="Jetton wallet address. Must be sent in hex, base64 and base64url forms")
+    owner_address: Optional[PyAddress] = Field(default=None, description="Address of Jetton wallet's owner. Must be sent in hex, base64 and base64url forms")
+    jetton_address: Optional[PyAddress] = Field(default=None, description="Jetton Master. Must be sent in hex, base64 and base64url forms")
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
 class JettonFilter(BaseModel):
-    address: Optional[PyAddress] = Field(
-        default=None,
-        description="Account address. Must be sent in hex, base64 and base64url forms",
-    )
-    jetton_wallet: Optional[PyAddress] = Field(
-        default=None,
-        description="Jetton wallet address. Must be sent in hex, base64 and base64url forms",
-    )
-    jetton_master: Optional[PyAddress] = Field(
-        default=None,
-        description="Jetton master address. Must be sent in hex, base64 and base64url forms",
-    )
-    direction: Literal["in", "out", "both"] = Field(
-        default="both", description="Direction transactions by lt"
-    )
-    start_utime: Optional[PyDatetime] = Field(
-        default=None,
-        description="Query transactions with generation UTC timestamp after given timestamp",
-    )
-    end_utime: Optional[PyDatetime] = Field(
-        default=None,
-        description="Query transactions with generation UTC timestamp before given timestamp",
-    )
-    start_lt: Optional[int] = Field(
-        default=None, description="Query transactions with lt >= start_lt"
-    )
-    end_lt: Optional[int] = Field(
-        default=None, description="Query transactions with lt <= end_lt"
-    )
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read"
-    )
-    sort: Literal["asc", "desc"] = Field(
-        default="desc", description="Sort results by UTC timestamp"
-    )
+    address: Optional[PyAddress] = Field(default=None, description="Account address. Must be sent in hex, base64 and base64url forms")
+    jetton_wallet: Optional[PyAddress] = Field(default=None, description="Jetton wallet address. Must be sent in hex, base64 and base64url forms")
+    jetton_master: Optional[PyAddress] = Field(default=None, description="Jetton master address. Must be sent in hex, base64 and base64url forms")
+    direction: Literal["in", "out", "both"] = Field(default="both", description="Direction transactions by lt")
+    start_utime: Optional[PyDatetime] = Field(default=None, description="Query transactions with generation UTC timestamp after given timestamp")
+    end_utime: Optional[PyDatetime] = Field(default=None, description="Query transactions with generation UTC timestamp before given timestamp")
+    start_lt: Optional[int] = Field(default=None, description="Query transactions with lt >= start_lt")
+    end_lt: Optional[int] = Field(default=None, description="Query transactions with lt <= end_lt")
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
+    sort: Literal["asc", "desc"] = Field(default="desc", description="Sort results by UTC timestamp")
 
     @model_validator(mode="after")
     def check_times(cls, values: GetNFTTransfersRequest):
         start_utime, end_utime = values.start_utime, values.end_utime
         if start_utime and end_utime and start_utime > end_utime:
-            raise ValueError(
-                "\033[93mstart_utime must be earlier than end_utime\033[0m"
-            )
+            raise ValueError("\033[93mstart_utime must be earlier than end_utime\033[0m")
         return values
 
     @model_validator(mode="after")
@@ -508,24 +268,13 @@ class GetJettonBurnsRequest(JettonFilter): ...
 
 
 class GetTopAccountsByBalanceRequest(BaseModel):
-    limit: int = Field(
-        default=128,
-        ge=1,
-        le=256,
-        description="Limit number of queried rows. Use with offset to batch read",
-    )
-    offset: int = Field(
-        default=0, ge=0, description="Skip first N rows. Use with limit to batch read"
-    )
+    limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
 class GetAccountRequest(BaseModel):
-    address: PyAddress = Field(
-        description="Account address. Account address. Can be sent in raw or user-friendly form"
-    )
+    address: PyAddress = Field(description="Account address. Account address. Can be sent in raw or user-friendly form")
 
 
 class GetWalletRequest(BaseModel):
-    address: PyAddress = Field(
-        description="Account address. Account address. Can be sent in raw or user-friendly form"
-    )
+    address: PyAddress = Field(description="Account address. Account address. Can be sent in raw or user-friendly form")
