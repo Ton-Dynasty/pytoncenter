@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, model_serializer
 
-from .types import PyAddress
+from .types import AddressLike
 
 
 class AccountBalance(BaseModel):
-    account: PyAddress = Field(..., title="Account")
+    account: AddressLike = Field(..., title="Account")
     balance: str = Field(..., title="Balance")
 
 
@@ -24,7 +24,7 @@ class BlockReference(BaseModel):
 
 
 class EstimateFeeRequest(BaseModel):
-    address: PyAddress = Field(..., title="Address")
+    address: AddressLike = Field(..., title="Address")
     body: str = Field(..., title="Body")
     init_code: Optional[str] = Field(None, title="Init Code")
     init_data: Optional[str] = Field(None, title="Init Data")
@@ -51,8 +51,8 @@ GetMethodParameterType = Literal["cell", "slice", "num", "list", "tuple", "unsup
 
 class JettonBurn(BaseModel):
     query_id: str = Field(..., title="Query Id")
-    owner: PyAddress = Field(..., title="Owner")
-    jetton_master: PyAddress = Field(..., title="Jetton Master")
+    owner: AddressLike = Field(..., title="Owner")
+    jetton_master: AddressLike = Field(..., title="Jetton Master")
     transaction_hash: str = Field(..., title="Transaction Hash")
     transaction_lt: str = Field(..., title="Transaction Lt")
     transaction_now: int = Field(..., title="Transaction Now")
@@ -61,10 +61,10 @@ class JettonBurn(BaseModel):
 
 
 class JettonMaster(BaseModel):
-    address: PyAddress = Field(..., title="Address")
+    address: AddressLike = Field(..., title="Address")
     total_supply: str = Field(..., title="Total Supply")
     mintable: bool = Field(..., title="Mintable")
-    admin_address: Optional[PyAddress] = Field(..., title="Admin Address")
+    admin_address: Optional[AddressLike] = Field(..., title="Admin Address")
     last_transaction_lt: str = Field(..., title="Last Transaction Lt")
     jetton_wallet_code_hash: str = Field(..., title="Jetton Wallet Code Hash")
     jetton_content: Any = Field(..., title="Jetton Content")
@@ -74,25 +74,25 @@ class JettonMaster(BaseModel):
 
 class JettonTransfer(BaseModel):
     query_id: str = Field(..., title="Query Id")
-    source: PyAddress = Field(..., title="Source")
-    destination: PyAddress = Field(..., title="Destination")
+    source: AddressLike = Field(..., title="Source")
+    destination: AddressLike = Field(..., title="Destination")
     amount: str = Field(..., title="Amount")
-    source_wallet: PyAddress = Field(..., title="Source Wallet")
-    jetton_master: PyAddress = Field(..., title="Jetton Master")
+    source_wallet: AddressLike = Field(..., title="Source Wallet")
+    jetton_master: AddressLike = Field(..., title="Jetton Master")
     transaction_hash: str = Field(..., title="Transaction Hash")
     transaction_lt: str = Field(..., title="Transaction Lt")
     transaction_now: int = Field(..., title="Transaction Now")
-    response_destination: Optional[PyAddress] = Field(..., title="Response Destination")
+    response_destination: Optional[AddressLike] = Field(..., title="Response Destination")
     custom_payload: Optional[str] = Field(..., title="Custom Payload")
     forward_ton_amount: Optional[str] = Field(..., title="Forward Ton Amount")
     forward_payload: Optional[str] = Field(..., title="Forward Payload")
 
 
 class JettonWallet(BaseModel):
-    address: PyAddress = Field(..., title="Address")
+    address: AddressLike = Field(..., title="Address")
     balance: str = Field(..., title="Balance")
-    owner: PyAddress = Field(..., title="Owner")
-    jetton: PyAddress = Field(..., title="Jetton")
+    owner: AddressLike = Field(..., title="Owner")
+    jetton: AddressLike = Field(..., title="Jetton")
     last_transaction_lt: str = Field(..., title="Last Transaction Lt")
     code_hash: str = Field(..., title="Code Hash")
     data_hash: str = Field(..., title="Data Hash")
@@ -104,8 +104,8 @@ class MessageInitState(BaseModel):
 
 
 class NFTCollection(BaseModel):
-    address: PyAddress = Field(..., title="Address")
-    owner_address: Optional[PyAddress] = Field(..., title="Owner Address")
+    address: AddressLike = Field(..., title="Address")
+    owner_address: Optional[AddressLike] = Field(..., title="Owner Address")
     last_transaction_lt: str = Field(..., title="Last Transaction Lt")
     next_item_index: str = Field(..., title="Next Item Index")
     collection_content: Any = Field(..., title="Collection Content")
@@ -114,9 +114,9 @@ class NFTCollection(BaseModel):
 
 
 class NFTItem(BaseModel):
-    address: PyAddress = Field(..., title="Address")
-    collection_address: Optional[PyAddress] = Field(..., title="Collection Address")
-    owner_address: Optional[PyAddress] = Field(..., title="Owner Address")
+    address: AddressLike = Field(..., title="Address")
+    collection_address: Optional[AddressLike] = Field(..., title="Collection Address")
+    owner_address: Optional[AddressLike] = Field(..., title="Owner Address")
     init: bool = Field(..., title="Init")
     index: str = Field(..., title="Index")
     last_transaction_lt: str = Field(..., title="Last Transaction Lt")
@@ -128,12 +128,12 @@ class NFTItem(BaseModel):
 
 class NFTTransfer(BaseModel):
     query_id: str = Field(..., title="Query Id")
-    nft_address: PyAddress = Field(..., title="Nft Address")
+    nft_address: AddressLike = Field(..., title="Nft Address")
     transaction_hash: str = Field(..., title="Transaction Hash")
     transaction_lt: str = Field(..., title="Transaction Lt")
     transaction_now: int = Field(..., title="Transaction Now")
-    old_owner: PyAddress = Field(..., title="Old Owner")
-    new_owner: PyAddress = Field(..., title="New Owner")
+    old_owner: AddressLike = Field(..., title="Old Owner")
+    new_owner: AddressLike = Field(..., title="New Owner")
     response_destination: Optional[str] = Field(..., title="Response Destination")
     custom_payload: Optional[str] = Field(..., title="Custom Payload")
     forward_amount: str = Field(..., title="Forward Amount")
@@ -182,7 +182,7 @@ class Account(BaseModel):
 
 class AccountState(BaseModel):
     hash: str = Field(..., title="Hash")
-    account: PyAddress = Field(..., title="Account")
+    account: AddressLike = Field(..., title="Account")
     balance: str = Field(..., title="Balance")
     account_status: Literal["uninit", "frozen", "active", "nonexist"] = Field(..., title="Account Status")
     frozen_hash: Optional[str] = Field(..., title="Frozen Hash")
@@ -227,7 +227,7 @@ class EstimateFeeResponse(BaseModel):
 
 class GetMethodParameterInput(BaseModel):
     type: GetMethodParameterType = Field(..., title="Type")
-    value: Optional[Union[List[GetMethodParameterInput], str, int, bool, PyAddress]] = Field(..., title="Value")
+    value: Optional[Union[List[GetMethodParameterInput], str, int, bool, AddressLike]] = Field(..., title="Value")
 
     @model_serializer
     def serialize_value(self):
@@ -261,9 +261,9 @@ class MessageContent(BaseModel):
 
 
 class RunGetMethodRequest(BaseModel):
-    address: PyAddress = Field(..., title="Address")
+    address: AddressLike = Field(..., title="Address")
     method: str = Field(..., title="Method")
-    stack: List[GetMethodParameterInput] = Field(..., title="Stack")
+    stack: List[Union[GetMethodParameterInput, Dict[str, Any]]] = Field([], title="Stack")
 
 
 class RunGetMethodResponse(BaseModel):
@@ -293,7 +293,7 @@ class Message(BaseModel):
 
 
 class Transaction(BaseModel):
-    account: PyAddress = Field(..., title="Account")
+    account: AddressLike = Field(..., title="Account")
     account_friendly: str = Field(..., title="Account Friendly")
     hash: str = Field(..., title="Hash")
     lt: str = Field(..., title="Lt")

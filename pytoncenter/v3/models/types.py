@@ -61,4 +61,4 @@ class _AddressTypeAnnotation:
         return handler(core_schema.str_schema())
 
 
-PyAddress = Annotated[str, Address, _AddressTypeAnnotation]
+AddressLike = Annotated[str, Address, _AddressTypeAnnotation]

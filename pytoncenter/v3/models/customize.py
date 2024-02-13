@@ -4,7 +4,7 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field, model_validator
 
-from .types import PyAddress, PyDatetime
+from .types import AddressLike, PyDatetime
 
 __all__ = [
     "GetBlockRequest",
@@ -74,8 +74,8 @@ class GetTransactionRequest(BaseModel):
     workchain: Optional[int] = Field(default=None, description="Block workchain")
     shard: Optional[str] = Field(default=None, description="Block shard id. Must be sent with workchain")
     seqno: Optional[int] = Field(default=None, description="Block block seqno. Must be sent with workchain and shard")
-    account: Optional[PyAddress] = Field(default=None, description="The account address to get transactions. Can be sent in hex, base64 or base64url form")
-    exclude_account: Optional[PyAddress] = Field(default=None, description="Exclude transactions on specified account addresses")
+    account: Optional[AddressLike] = Field(default=None, description="The account address to get transactions. Can be sent in hex, base64 or base64url form")
+    exclude_account: Optional[AddressLike] = Field(default=None, description="Exclude transactions on specified account addresses")
     hash: Optional[str] = Field(default=None, description="Transaction hash. Acceptable in hex, base64 and base64url forms")
     lt: Optional[int] = Field(default=None, description="Transaction logical time")
     start_utime: Optional[PyDatetime] = Field(default=None, description="Query blocks with generation UTC timestamp after given timestamp")
@@ -151,32 +151,32 @@ class GetTransactionTraceRequest(BaseModel):
 
 class GetMessagesRequest(BaseModel):
     hash: Optional[str] = Field(default=None, description="Message hash. Acceptable in hex, base64 and base64url forms")
-    source: Optional[PyAddress] = Field(default=None, description="The source account address. Can be sent in hex, base64 or base64url form")
-    destination: Optional[PyAddress] = Field(default=None, description="The destination account address. Can be sent in hex, base64 or base64url form")
+    source: Optional[AddressLike] = Field(default=None, description="The source account address. Can be sent in hex, base64 or base64url form")
+    destination: Optional[AddressLike] = Field(default=None, description="The destination account address. Can be sent in hex, base64 or base64url form")
     body_hash: Optional[str] = Field(default=None, description="Message body hash. Acceptable in hex, base64 and base64url forms")
     limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
     offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
 class GetNFTCollectionsRequest(BaseModel):
-    collection_address: Optional[PyAddress] = Field(default=None, description="NFT collection address. Must be sent in hex, base64 and base64url forms")
-    owner_address: Optional[PyAddress] = Field(default=None, description="NFT owner address. Must be sent in hex, base64 and base64url forms")
+    collection_address: Optional[AddressLike] = Field(default=None, description="NFT collection address. Must be sent in hex, base64 and base64url forms")
+    owner_address: Optional[AddressLike] = Field(default=None, description="NFT owner address. Must be sent in hex, base64 and base64url forms")
     limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
     offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
 class GetNFTItemsRequest(BaseModel):
-    address: Optional[PyAddress] = Field(default=None, description="NFT address. Must be sent in hex, base64 and base64url forms.")
-    owner_address: Optional[PyAddress] = Field(default=None, description="Address of NFT owner. Must be sent in hex, base64 and base64url forms")
-    collection_address: Optional[PyAddress] = Field(default=None, description="NFT collection address. Must be sent in hex, base64 and base64url forms")
+    address: Optional[AddressLike] = Field(default=None, description="NFT address. Must be sent in hex, base64 and base64url forms.")
+    owner_address: Optional[AddressLike] = Field(default=None, description="Address of NFT owner. Must be sent in hex, base64 and base64url forms")
+    collection_address: Optional[AddressLike] = Field(default=None, description="NFT collection address. Must be sent in hex, base64 and base64url forms")
     limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
     offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
 class GetNFTTransfersRequest(BaseModel):
-    address: Optional[PyAddress] = Field(default=None, description="Address of NFT owner. Must be sent in hex, base64 and base64url forms")
-    item_address: Optional[PyAddress] = Field(default=None, description="NFT item address. Must be sent in hex, base64 and base64url forms")
-    collection_address: Optional[PyAddress] = Field(default=None, description="NFT collection address. Must be sent in hex, base64 and base64url forms")
+    address: Optional[AddressLike] = Field(default=None, description="Address of NFT owner. Must be sent in hex, base64 and base64url forms")
+    item_address: Optional[AddressLike] = Field(default=None, description="NFT item address. Must be sent in hex, base64 and base64url forms")
+    collection_address: Optional[AddressLike] = Field(default=None, description="NFT collection address. Must be sent in hex, base64 and base64url forms")
     direction: Literal["in", "out", "both"] = Field(default="both", description="Direction transactions by lt")
     start_utime: Optional[PyDatetime] = Field(default=None, description="Query transactions with generation UTC timestamp after given timestamp")
     end_utime: Optional[PyDatetime] = Field(default=None, description="Query transactions with generation UTC timestamp before given timestamp")
@@ -202,24 +202,24 @@ class GetNFTTransfersRequest(BaseModel):
 
 
 class GetJettonMastersRequest(BaseModel):
-    address: Optional[PyAddress] = Field(default=None, description="Jetton Master address. Must be sent in hex, base64 and base64url forms")
-    admin_address: Optional[PyAddress] = Field(default=None, description="Address of Jetton Master's admin. Must be sent in hex, base64 and base64url forms")
+    address: Optional[AddressLike] = Field(default=None, description="Jetton Master address. Must be sent in hex, base64 and base64url forms")
+    admin_address: Optional[AddressLike] = Field(default=None, description="Address of Jetton Master's admin. Must be sent in hex, base64 and base64url forms")
     limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
     offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
 class GetJettonWalletsRequest(BaseModel):
-    address: Optional[PyAddress] = Field(default=None, description="Jetton wallet address. Must be sent in hex, base64 and base64url forms")
-    owner_address: Optional[PyAddress] = Field(default=None, description="Address of Jetton wallet's owner. Must be sent in hex, base64 and base64url forms")
-    jetton_address: Optional[PyAddress] = Field(default=None, description="Jetton Master. Must be sent in hex, base64 and base64url forms")
+    address: Optional[AddressLike] = Field(default=None, description="Jetton wallet address. Must be sent in hex, base64 and base64url forms")
+    owner_address: Optional[AddressLike] = Field(default=None, description="Address of Jetton wallet's owner. Must be sent in hex, base64 and base64url forms")
+    jetton_address: Optional[AddressLike] = Field(default=None, description="Jetton Master. Must be sent in hex, base64 and base64url forms")
     limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
     offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
 class JettonFilter(BaseModel):
-    address: Optional[PyAddress] = Field(default=None, description="Account address. Must be sent in hex, base64 and base64url forms")
-    jetton_wallet: Optional[PyAddress] = Field(default=None, description="Jetton wallet address. Must be sent in hex, base64 and base64url forms")
-    jetton_master: Optional[PyAddress] = Field(default=None, description="Jetton master address. Must be sent in hex, base64 and base64url forms")
+    address: Optional[AddressLike] = Field(default=None, description="Account address. Must be sent in hex, base64 and base64url forms")
+    jetton_wallet: Optional[AddressLike] = Field(default=None, description="Jetton wallet address. Must be sent in hex, base64 and base64url forms")
+    jetton_master: Optional[AddressLike] = Field(default=None, description="Jetton master address. Must be sent in hex, base64 and base64url forms")
     direction: Literal["in", "out", "both"] = Field(default="both", description="Direction transactions by lt")
     start_utime: Optional[PyDatetime] = Field(default=None, description="Query transactions with generation UTC timestamp after given timestamp")
     end_utime: Optional[PyDatetime] = Field(default=None, description="Query transactions with generation UTC timestamp before given timestamp")
@@ -256,8 +256,8 @@ class GetTopAccountsByBalanceRequest(BaseModel):
 
 
 class GetAccountRequest(BaseModel):
-    address: PyAddress = Field(description="Account address. Account address. Can be sent in raw or user-friendly form")
+    address: AddressLike = Field(description="Account address. Account address. Can be sent in raw or user-friendly form")
 
 
 class GetWalletRequest(BaseModel):
-    address: PyAddress = Field(description="Account address. Account address. Can be sent in raw or user-friendly form")
+    address: AddressLike = Field(description="Account address. Account address. Can be sent in raw or user-friendly form")
