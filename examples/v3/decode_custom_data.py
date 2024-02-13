@@ -25,6 +25,32 @@ async def main():
     output = OracleMetaDataDecoder.decode(result)
     pprint(output, width=120)
 
+    print("====================================")
+
+    # call get method with parameters
+    # contract address: kQBO50OJlbegG9CNOeIL8v85Z0sGTJY1YwiOQ-1MtxRv8hz7 (alarm contract)
+    # new price: 1 TON for 4 USDT
+    # get fun getEstimate(buyNum: Int, newBaseAssetPrice: Int)
+    req = RunGetMethodRequest(
+        address="kQBO50OJlbegG9CNOeIL8v85Z0sGTJY1YwiOQ-1MtxRv8hz7",
+        method="getEstimate",
+        stack=[
+            GetMethodParameterInput(type=GetMethodParameterType.num, value="1"),
+            GetMethodParameterInput(type=GetMethodParameterType.num, value=str(int(0.0004 * 2**64))),
+        ],
+    )
+    result = await client.run_get_method(req)
+
+    EstimateResultDecoder = Decoder(
+        Types.Bool("canBuy"),
+        Types.Number("needBaseAssetAmount"),
+        Types.Number("needQuoteAssetAmount"),
+    )
+    output = EstimateResultDecoder.decode(result)
+    print("canBuy:", output["canBuy"])
+    print("needBaseAssetAmount:", output["needBaseAssetAmount"] / 10**9, "TON")
+    print("needQuoteAssetAmount:", output["needQuoteAssetAmount"] / 10**6, "USDT")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

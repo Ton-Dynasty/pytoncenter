@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, List, Optional, Union, Literal
+from typing import Any, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
+from .types import PyAddress
+
 
 class AccountBalance(BaseModel):
-    account: str = Field(..., title="Account")
+    account: PyAddress = Field(..., title="Account")
     balance: str = Field(..., title="Balance")
 
 
-class AccountStatus(Enum):
+class AccountStatus(str, Enum):
     uninit = "uninit"
     frozen = "frozen"
     active = "active"
@@ -30,7 +32,7 @@ class BlockReference(BaseModel):
 
 
 class EstimateFeeRequest(BaseModel):
-    address: str = Field(..., title="Address")
+    address: PyAddress = Field(..., title="Address")
     body: str = Field(..., title="Body")
     init_code: Optional[str] = Field(None, title="Init Code")
     init_data: Optional[str] = Field(None, title="Init Data")
@@ -52,7 +54,7 @@ class Fee(BaseModel):
     fwd_fee: int = Field(..., title="Fwd Fee")
 
 
-class GetMethodParameterType(Enum):
+class GetMethodParameterType(str, Enum):
     cell = "cell"
     slice = "slice"
     num = "num"
@@ -63,8 +65,8 @@ class GetMethodParameterType(Enum):
 
 class JettonBurn(BaseModel):
     query_id: str = Field(..., title="Query Id")
-    owner: str = Field(..., title="Owner")
-    jetton_master: str = Field(..., title="Jetton Master")
+    owner: PyAddress = Field(..., title="Owner")
+    jetton_master: PyAddress = Field(..., title="Jetton Master")
     transaction_hash: str = Field(..., title="Transaction Hash")
     transaction_lt: str = Field(..., title="Transaction Lt")
     transaction_now: int = Field(..., title="Transaction Now")
@@ -73,10 +75,10 @@ class JettonBurn(BaseModel):
 
 
 class JettonMaster(BaseModel):
-    address: str = Field(..., title="Address")
+    address: PyAddress = Field(..., title="Address")
     total_supply: str = Field(..., title="Total Supply")
     mintable: bool = Field(..., title="Mintable")
-    admin_address: Optional[str] = Field(..., title="Admin Address")
+    admin_address: Optional[PyAddress] = Field(..., title="Admin Address")
     last_transaction_lt: str = Field(..., title="Last Transaction Lt")
     jetton_wallet_code_hash: str = Field(..., title="Jetton Wallet Code Hash")
     jetton_content: Any = Field(..., title="Jetton Content")
@@ -86,25 +88,25 @@ class JettonMaster(BaseModel):
 
 class JettonTransfer(BaseModel):
     query_id: str = Field(..., title="Query Id")
-    source: str = Field(..., title="Source")
-    destination: str = Field(..., title="Destination")
+    source: PyAddress = Field(..., title="Source")
+    destination: PyAddress = Field(..., title="Destination")
     amount: str = Field(..., title="Amount")
-    source_wallet: str = Field(..., title="Source Wallet")
-    jetton_master: str = Field(..., title="Jetton Master")
+    source_wallet: PyAddress = Field(..., title="Source Wallet")
+    jetton_master: PyAddress = Field(..., title="Jetton Master")
     transaction_hash: str = Field(..., title="Transaction Hash")
     transaction_lt: str = Field(..., title="Transaction Lt")
     transaction_now: int = Field(..., title="Transaction Now")
-    response_destination: Optional[str] = Field(..., title="Response Destination")
+    response_destination: Optional[PyAddress] = Field(..., title="Response Destination")
     custom_payload: Optional[str] = Field(..., title="Custom Payload")
     forward_ton_amount: Optional[str] = Field(..., title="Forward Ton Amount")
     forward_payload: Optional[str] = Field(..., title="Forward Payload")
 
 
 class JettonWallet(BaseModel):
-    address: str = Field(..., title="Address")
+    address: PyAddress = Field(..., title="Address")
     balance: str = Field(..., title="Balance")
-    owner: str = Field(..., title="Owner")
-    jetton: str = Field(..., title="Jetton")
+    owner: PyAddress = Field(..., title="Owner")
+    jetton: PyAddress = Field(..., title="Jetton")
     last_transaction_lt: str = Field(..., title="Last Transaction Lt")
     code_hash: str = Field(..., title="Code Hash")
     data_hash: str = Field(..., title="Data Hash")
@@ -116,8 +118,8 @@ class MessageInitState(BaseModel):
 
 
 class NFTCollection(BaseModel):
-    address: str = Field(..., title="Address")
-    owner_address: Optional[str] = Field(..., title="Owner Address")
+    address: PyAddress = Field(..., title="Address")
+    owner_address: Optional[PyAddress] = Field(..., title="Owner Address")
     last_transaction_lt: str = Field(..., title="Last Transaction Lt")
     next_item_index: str = Field(..., title="Next Item Index")
     collection_content: Any = Field(..., title="Collection Content")
@@ -126,9 +128,9 @@ class NFTCollection(BaseModel):
 
 
 class NFTItem(BaseModel):
-    address: str = Field(..., title="Address")
-    collection_address: Optional[str] = Field(..., title="Collection Address")
-    owner_address: Optional[str] = Field(..., title="Owner Address")
+    address: PyAddress = Field(..., title="Address")
+    collection_address: Optional[PyAddress] = Field(..., title="Collection Address")
+    owner_address: Optional[PyAddress] = Field(..., title="Owner Address")
     init: bool = Field(..., title="Init")
     index: str = Field(..., title="Index")
     last_transaction_lt: str = Field(..., title="Last Transaction Lt")
@@ -140,12 +142,12 @@ class NFTItem(BaseModel):
 
 class NFTTransfer(BaseModel):
     query_id: str = Field(..., title="Query Id")
-    nft_address: str = Field(..., title="Nft Address")
+    nft_address: PyAddress = Field(..., title="Nft Address")
     transaction_hash: str = Field(..., title="Transaction Hash")
     transaction_lt: str = Field(..., title="Transaction Lt")
     transaction_now: int = Field(..., title="Transaction Now")
-    old_owner: str = Field(..., title="Old Owner")
-    new_owner: str = Field(..., title="New Owner")
+    old_owner: PyAddress = Field(..., title="Old Owner")
+    new_owner: PyAddress = Field(..., title="New Owner")
     response_destination: Optional[str] = Field(..., title="Response Destination")
     custom_payload: Optional[str] = Field(..., title="Custom Payload")
     forward_amount: str = Field(..., title="Forward Amount")
@@ -194,7 +196,7 @@ class Account(BaseModel):
 
 class AccountState(BaseModel):
     hash: str = Field(..., title="Hash")
-    account: str = Field(..., title="Account")
+    account: PyAddress = Field(..., title="Account")
     balance: str = Field(..., title="Balance")
     account_status: AccountStatus
     frozen_hash: Optional[str] = Field(..., title="Frozen Hash")
@@ -263,7 +265,7 @@ class MessageContent(BaseModel):
 
 
 class RunGetMethodRequest(BaseModel):
-    address: str = Field(..., title="Address")
+    address: PyAddress = Field(..., title="Address")
     method: str = Field(..., title="Method")
     stack: List[GetMethodParameterInput] = Field(..., title="Stack")
 
@@ -295,7 +297,7 @@ class Message(BaseModel):
 
 
 class Transaction(BaseModel):
-    account: str = Field(..., title="Account")
+    account: PyAddress = Field(..., title="Account")
     account_friendly: str = Field(..., title="Account Friendly")
     hash: str = Field(..., title="Hash")
     lt: str = Field(..., title="Lt")

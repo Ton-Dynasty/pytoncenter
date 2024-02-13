@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, Field, PlainSerializer, WithJsonSchema, model_validator
-from typing_extensions import Annotated
+from pydantic import BaseModel, Field, model_validator
 
-from pytoncenter.address import Address
+from .types import PyAddress, PyDatetime
 
 __all__ = [
     "GetBlockRequest",
@@ -28,21 +26,6 @@ __all__ = [
     "GetTopAccountsByBalanceRequest",
     "GetAccountRequest",
     "GetWalletRequest",
-]
-
-
-PyDatetime = Annotated[
-    datetime,
-    PlainSerializer(lambda x: int(x.timestamp()), return_type=int),
-    WithJsonSchema({"type": "number"}, mode="serialization"),
-]
-
-
-PyAddress = Annotated[
-    str,
-    Address,
-    PlainSerializer(lambda x: x.to_string(True, True, is_test_only=False), return_type=str),
-    WithJsonSchema({"type": "string"}, mode="serialization"),
 ]
 
 
