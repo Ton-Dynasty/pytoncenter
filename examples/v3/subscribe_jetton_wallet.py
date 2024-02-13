@@ -8,11 +8,7 @@ from tonpy import CellSlice
 
 from pytoncenter import get_client
 from pytoncenter.address import Address
-from pytoncenter.extension.message import (
-    JettonBurn,
-    JettonInternalTransfer,
-    JettonTransfer,
-)
+from pytoncenter.extension.message import JettonMessage
 from pytoncenter.utils import get_opcode
 from pytoncenter.v2.tools import NamedFunction, create_named_mapping_func
 from pytoncenter.v3.models import *
@@ -22,19 +18,18 @@ LOGGER = logging.getLogger(__name__)
 
 
 async def handle_jetton_internal_transfer(body: CellSlice, tx: Transaction, labeler: NamedFunction):
-    msg = JettonInternalTransfer.parse(body)
+    msg = JettonMessage.InternalTransfer.parse(body)
     src = labeler(Address(tx.in_msg.source))
     dst = labeler(Address(tx.in_msg.destination))
-    jetton_amount = round(float(msg.amount) / 1e9, 4)
     forward_ton = round(float(msg.forward_ton_amount) / 1e9, 4)
     if tx.in_msg.init_state is not None:
-        LOGGER.info(f"[{msg.OPCODE}] {src} deployed {dst} and mint {jetton_amount} USDT")
+        return
     else:
         LOGGER.info(f"[{msg.OPCODE}] Jetton Internal Transfer | {src} -> {dst}, forward {forward_ton} TON")
 
 
 async def handle_jetton_transfer(body: CellSlice, tx: Transaction, labeler: NamedFunction):
-    msg = JettonTransfer.parse(body)
+    msg = JettonMessage.Transfer.parse(body)
     jetton_amount = round(float(msg.amount) / 1e6, 4)
     value = round(float(tx.in_msg.value) / 1e9, 4)
     src = labeler(Address(tx.in_msg.source))
@@ -43,7 +38,7 @@ async def handle_jetton_transfer(body: CellSlice, tx: Transaction, labeler: Name
 
 
 async def handle_jetton_burn(body: CellSlice, tx: Transaction, labeler: NamedFunction):
-    msg = JettonBurn.parse(body)
+    msg = JettonMessage.Burn.parse(body)
     burn_amount = round(float(msg.amount) / 1e6, 4)
     src = labeler(Address(tx.in_msg.source))
     LOGGER.info(f"[{msg.OPCODE}] Jetton Burn | 🔥 {src} burn {burn_amount} USDT 🔥")
@@ -56,9 +51,9 @@ async def main():
     client = get_client(version="v3", network="testnet")
 
     callbacks: Dict[str, Callable[[CellSlice, Transaction, NamedFunction], Coroutine]] = {
-        JettonInternalTransfer.OPCODE: handle_jetton_internal_transfer,
-        JettonTransfer.OPCODE: handle_jetton_transfer,
-        JettonBurn.OPCODE: handle_jetton_burn,
+        JettonMessage.InternalTransfer.OPCODE: handle_jetton_internal_transfer,
+        JettonMessage.Transfer.OPCODE: handle_jetton_transfer,
+        JettonMessage.Burn.OPCODE: handle_jetton_burn,
     }
 
     labeler = create_named_mapping_func(

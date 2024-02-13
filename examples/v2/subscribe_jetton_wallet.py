@@ -6,11 +6,7 @@ from typing import Callable, Coroutine, Dict
 from tonpy import CellSlice
 
 from pytoncenter.address import Address
-from pytoncenter.extension.message import (
-    JettonBurn,
-    JettonInternalTransfer,
-    JettonTransfer,
-)
+from pytoncenter.extension.message import JettonMessage
 from pytoncenter.utils import get_opcode
 from pytoncenter.v2.api import AsyncTonCenterClientV2
 from pytoncenter.v2.tools import NamedFunction, create_named_mapping_func
@@ -21,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 async def handle_jetton_internal_transfer(body: CellSlice, tx: Tx, labeler: NamedFunction):
-    msg = JettonInternalTransfer.parse(body)
+    msg = JettonMessage.InternalTransfer.parse(body)
     src = labeler(Address(tx.get("in_msg", {}).get("source")))
     dst = labeler(Address(tx.get("in_msg", {}).get("destination")))
     jetton_amount = round(float(msg.amount) / 1e9, 4)
@@ -33,7 +29,7 @@ async def handle_jetton_internal_transfer(body: CellSlice, tx: Tx, labeler: Name
 
 
 async def handle_jetton_transfer(body: CellSlice, tx: Tx, labeler: NamedFunction):
-    msg = JettonTransfer.parse(body)
+    msg = JettonMessage.Transfer.parse(body)
     jetton_amount = round(float(msg.amount) / 1e6, 4)
     value = round(float(tx.get("in_msg", {}).get("value")) / 1e9, 4)
     src = labeler(Address(tx.get("in_msg", {}).get("source")))
@@ -42,7 +38,7 @@ async def handle_jetton_transfer(body: CellSlice, tx: Tx, labeler: NamedFunction
 
 
 async def handle_jetton_burn(body: CellSlice, tx: Tx, labeler: NamedFunction):
-    msg = JettonBurn.parse(body)
+    msg = JettonMessage.Burn.parse(body)
     burn_amount = round(float(msg.amount) / 1e6, 4)
     src = labeler(Address(tx.get("in_msg", {}).get("source")))
     LOGGER.info(f"[{msg.OPCODE}] Jetton Burn | 🔥 {src} burn {burn_amount} USDT 🔥")
@@ -55,9 +51,9 @@ async def main():
     client = AsyncTonCenterClientV2(network="testnet")
 
     callbacks: Dict[str, Callable[[CellSlice, Tx, NamedFunction], Coroutine]] = {
-        JettonInternalTransfer.OPCODE: handle_jetton_internal_transfer,
-        JettonTransfer.OPCODE: handle_jetton_transfer,
-        JettonBurn.OPCODE: handle_jetton_burn,
+        JettonMessage.InternalTransfer.OPCODE: handle_jetton_internal_transfer,
+        JettonMessage.Transfer.OPCODE: handle_jetton_transfer,
+        JettonMessage.Burn.OPCODE: handle_jetton_burn,
     }
 
     labeler = create_named_mapping_func(

@@ -171,10 +171,23 @@ class AsyncTonCenterClientV3(Multicallable):
         return EstimateFeeResponse(**resp)
 
     async def subscribe_tx(self, account: str, start_time: Optional[datetime] = None, interval_in_second: float = 2):
+        """
+        subscribe_tx subscribes to transactions of a wallet and yields the transactions as they come.
+
+        Parameters
+        ----------
+        account: str
+            The account (address) to subscribe, the account can be any_from of address
+        start_time: datetime.datetime
+            The start time to crawl data.
+        interval_in_second: float
+            Interval between every batch of requests, in second.
+        """
+        warnings.warn("\033[93mThe `subscribe_tx` function is currently under development; please use it with caution.\033[0m", UserWarning)
         cur_time = start_time
 
         while True:
-            req = GetTransactionRequest(account=account, start_utime=cur_time, sort="asc", limit=10)
+            req = GetTransactionRequest(account=account, start_utime=cur_time, sort="asc", limit=20)
             txs = await self.get_transactions(req)
             for tx in txs:
                 yield tx
