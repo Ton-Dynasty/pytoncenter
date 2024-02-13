@@ -101,7 +101,7 @@ class GetTransactionRequest(BaseModel):
     end_lt: Optional[int] = Field(default=None, description="Query blocks with lt <= end_lt")
     limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read.")
     offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read.")
-    sort: Literal["asc", "desc"] = Field("desc", description="Sort results by UTC timestamp")
+    sort: Literal["asc", "desc"] = Field(default="desc", description="Sort results by UTC timestamp")
 
     @model_validator(mode="after")
     def check_times(cls, values: GetBlockRequest):
@@ -163,7 +163,7 @@ class GetTracesRequest(BaseModel):
 
 class GetTransactionTraceRequest(BaseModel):
     hash: str = Field(description="Transaction hash. Acceptable in hex, base64 and base64url forms")
-    sort: Literal["none", "asc", "desc"] = Field("asc", description="Sort transactions by lt")
+    sort: Literal["none", "asc", "desc"] = Field(default="asc", description="Sort transactions by lt")
 
 
 class GetMessagesRequest(BaseModel):
