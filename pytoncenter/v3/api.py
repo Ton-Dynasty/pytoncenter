@@ -2,7 +2,7 @@ import asyncio
 import os
 import warnings
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, OrderedDict, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import aiohttp
 
@@ -36,9 +36,6 @@ class AsyncTonCenterClientV3(Multicallable):
         if self.api_key:
             headers["X-API-KEY"] = self.api_key
         return headers
-
-    def _serialize(self, params: OrderedDict[str, str]) -> List[Tuple[str, Any]]:
-        return [(k, v) for k, v in params.items()]
 
     async def _parse_response(self, response: aiohttp.ClientResponse):
         """

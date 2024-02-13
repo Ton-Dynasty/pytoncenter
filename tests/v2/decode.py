@@ -1,7 +1,8 @@
 import pytest
-from pytoncenter.v2.api import AsyncTonCenterClientV2
+
 from pytoncenter.address import Address
-from pytoncenter.decoder import JettonDataDecoder, Types, Decoder
+from pytoncenter.decoder import Decoder, JettonDataDecoder, Types
+from pytoncenter.v2.api import AsyncTonCenterClientV2
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -14,7 +15,7 @@ class TestDecoder:
 
     @pytest.mark.asyncio
     async def test_get_jetton_data(self):
-        result = await self.client.run_get_method("kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A", "get_jetton_data", {})
+        result = await self.client.run_get_method("kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A", "get_jetton_data", [])
         decoder = JettonDataDecoder()
         output = decoder.decode(result)
         assert output["mintable"] == True
@@ -22,7 +23,7 @@ class TestDecoder:
 
     @pytest.mark.asyncio
     async def test_get_custom_data(self):
-        result = await self.client.run_get_method("kQCpk40ub48fvx89vSUjOTRy0vOEEZ4crOPPfLEvg88q1EeH", "getOracleData", {})
+        result = await self.client.run_get_method("kQCpk40ub48fvx89vSUjOTRy0vOEEZ4crOPPfLEvg88q1EeH", "getOracleData", [])
         OracleMetaDataDecoder = Decoder(
             Types.Address("base_asset_address"),
             Types.Address("quote_asset_address"),
