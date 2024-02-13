@@ -86,7 +86,8 @@ class AsyncTonCenterClientV3(Multicallable):
     async def get_masterchain_info(self) -> MasterchainInfo:
         return await self._async_get("masterchainInfo")
 
-    async def get_blocks(self, req: GetBlockRequest) -> List[Block]:
+    async def get_blocks(self, req: Optional[GetBlockRequest] = None) -> List[Block]:
+        req = req or GetBlockRequest()
         resp = await self._async_get("blocks", req.model_dump(exclude_none=True))
         return [Block(**r) for r in resp]
 
@@ -94,7 +95,8 @@ class AsyncTonCenterClientV3(Multicallable):
         resp = await self._async_get("masterchainBlockShards", req.model_dump(exclude_none=True))
         return [Block(**r) for r in resp]
 
-    async def get_transactions(self, req: GetTransactionRequest) -> List[Transaction]:
+    async def get_transactions(self, req: Optional[GetTransactionRequest] = None) -> List[Transaction]:
+        req = req or GetTransactionRequest()
         resp = await self._async_get("transactions", req.model_dump(exclude_none=True))
         return [Transaction(**r) for r in resp]
 
@@ -114,39 +116,48 @@ class AsyncTonCenterClientV3(Multicallable):
         resp = await self._async_get("traces", req.model_dump(exclude_none=True))
         return [TransactionTrace(**r) for r in resp]
 
-    async def get_messages(self, req: GetMessagesRequest) -> List[Message]:
+    async def get_messages(self, req: Optional[GetMessagesRequest] = None) -> List[Message]:
+        req = req or GetMessagesRequest()
         resp = await self._async_get("messages", req.model_dump(exclude_none=True))
         return [Message(**r) for r in resp]
 
-    async def get_nft_collections(self, req: GetNFTCollectionsRequest) -> List[NFTCollection]:
+    async def get_nft_collections(self, req: Optional[GetNFTCollectionsRequest] = None) -> List[NFTCollection]:
+        req = req or GetNFTCollectionsRequest()
         resp = await self._async_get("nft/collections", req.model_dump(exclude_none=True))
         return [NFTCollection(**r) for r in resp]
 
-    async def get_nft_items(self, req: GetNFTItemsRequest) -> List[NFTItem]:
+    async def get_nft_items(self, req: Optional[GetNFTItemsRequest] = None) -> List[NFTItem]:
+        req = req or GetNFTItemsRequest()
         resp = await self._async_get("nft/items", req.model_dump(exclude_none=True))
         return [NFTItem(**r) for r in resp]
 
-    async def get_nft_transfers(self, req: GetNFTTransfersRequest) -> List[NFTTransfer]:
+    async def get_nft_transfers(self, req: Optional[GetNFTTransfersRequest] = None) -> List[NFTTransfer]:
+        req = req or GetNFTTransfersRequest()
         resp = await self._async_get("nft/transfers", req.model_dump(exclude_none=True))
         return [NFTTransfer(**r) for r in resp]
 
-    async def get_jetton_masters(self, req: GetJettonMastersRequest) -> List[JettonMaster]:
+    async def get_jetton_masters(self, req: Optional[GetJettonMastersRequest] = None) -> List[JettonMaster]:
+        req = req or GetJettonMastersRequest()
         resp = await self._async_get("jetton/masters", req.model_dump(exclude_none=True))
         return [JettonMaster(**r) for r in resp]
 
-    async def get_jetton_wallets(self, req: GetJettonWalletsRequest) -> List[JettonWallet]:
+    async def get_jetton_wallets(self, req: Optional[GetJettonWalletsRequest] = None) -> List[JettonWallet]:
+        req = req or GetJettonWalletsRequest()
         resp = await self._async_get("jetton/wallets", req.model_dump(exclude_none=True))
         return [JettonWallet(**r) for r in resp]
 
-    async def get_jetton_transfers(self, req: GetJettonTransfersRequest) -> List[JettonTransfer]:
+    async def get_jetton_transfers(self, req: Optional[GetJettonTransfersRequest] = None) -> List[JettonTransfer]:
+        req = req or GetJettonTransfersRequest()
         resp = await self._async_get("jetton/transfers", req.model_dump(exclude_none=True))
         return [JettonTransfer(**r) for r in resp]
 
-    async def get_jetton_burns(self, req: GetJettonBurnsRequest) -> List[JettonBurn]:
+    async def get_jetton_burns(self, req: Optional[GetJettonBurnsRequest] = None) -> List[JettonBurn]:
+        req = req or GetJettonBurnsRequest()
         resp = await self._async_get("jetton/burns", req.model_dump(exclude_none=True))
         return [JettonBurn(**r) for r in resp]
 
-    async def get_top_accounts_by_balance(self, req: GetTopAccountsByBalanceRequest) -> List[AccountBalance]:
+    async def get_top_accounts_by_balance(self, req: Optional[GetTopAccountsByBalanceRequest] = None) -> List[AccountBalance]:
+        req = req or GetTopAccountsByBalanceRequest()
         resp = await self._async_get("topAccountsByBalance", req.model_dump(exclude_none=True))
         return [AccountBalance(**r) for r in resp]
 
