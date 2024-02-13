@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import base64
 import ctypes
-from typing import TypedDict, Union
-
-from pydantic import GetCoreSchemaHandler
-from pydantic_core import CoreSchema, core_schema
+from typing import Optional, TypedDict, Union
 
 from .utils import crc16, string_to_bytes
 
@@ -148,10 +145,10 @@ class Address:
 
     def to_string(
         self,
-        is_user_friendly: bool = None,
-        is_url_safe: bool = None,
-        is_bounceable: bool = None,
-        is_test_only: bool = None,
+        is_user_friendly: Optional[bool] = None,
+        is_url_safe: Optional[bool] = None,
+        is_bounceable: Optional[bool] = None,
+        is_test_only: Optional[bool] = None,
     ) -> str:
         if is_user_friendly is None:
             is_user_friendly = self._is_user_friendly
@@ -197,7 +194,3 @@ class Address:
 
     def __repr__(self) -> str:
         return self.to_string(True, True, True, is_test_only=False)
-
-    @classmethod
-    def __get_pydantic_core_schema__(cls, source_type: Address, handler: GetCoreSchemaHandler) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(cls, handler(str))
