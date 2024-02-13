@@ -3,7 +3,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
+from tonpy import Cell, CellSlice
 
 from .types import PyAddress
 
@@ -241,7 +242,19 @@ class EstimateFeeResponse(BaseModel):
 
 class GetMethodParameterInput(BaseModel):
     type: GetMethodParameterType
-    value: Optional[Union[List[GetMethodParameterInput], str]] = Field(..., title="Value")
+    value: Optional[Union[List[GetMethodParameterInput], str, int, bool, Cell, CellSlice]] = Field(..., title="Value")
+
+    @model_serializer
+    def serialize_value(self):
+        if isinstance(self.value, int) and self.type == GetMethodParameterType.num:
+            v = hex(self.value)
+            return {"type": self.type, "value": v}
+        if isinstance(self.value, bool) and self.type == GetMethodParameterType.num:
+            v = "-0x1" if self.value else "0x0"
+            return {"type": self.type, "value": v}
+        if isinstance(self.value, (Cell, CellSlice)):
+            return {"type": self.type, "value": self.value.to_boc()}
+        return {"type": self.type, "value": self.value}
 
 
 class GetMethodParameterOutput(BaseModel):

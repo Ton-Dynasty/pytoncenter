@@ -35,8 +35,8 @@ async def main():
         address="kQBO50OJlbegG9CNOeIL8v85Z0sGTJY1YwiOQ-1MtxRv8hz7",
         method="getEstimate",
         stack=[
-            GetMethodParameterInput(type=GetMethodParameterType.num, value="1"),
-            GetMethodParameterInput(type=GetMethodParameterType.num, value=str(int(0.0004 * 2**64))),
+            GetMethodParameterInput(type=GetMethodParameterType.num, value=1),
+            GetMethodParameterInput(type=GetMethodParameterType.num, value=int(0.004 * 2**64)),
         ],
     )
     result = await client.run_get_method(req)
@@ -46,6 +46,23 @@ async def main():
         Types.Number("needBaseAssetAmount"),
         Types.Number("needQuoteAssetAmount"),
     )
+    output = EstimateResultDecoder.decode(result)
+    print("canBuy:", output["canBuy"])
+    print("needBaseAssetAmount:", output["needBaseAssetAmount"] / 10**9, "TON")
+    print("needQuoteAssetAmount:", output["needQuoteAssetAmount"] / 10**6, "USDT")
+
+    print("====================================")
+
+    # Use a simple way
+    req = RunGetMethodRequest(
+        address="kQBO50OJlbegG9CNOeIL8v85Z0sGTJY1YwiOQ-1MtxRv8hz7",
+        method="getEstimate",
+        stack=[
+            {"type": "num", "value": 1},
+            {"type": "num", "value": int(0.004 * 2**64)},
+        ],
+    )
+    result = await client.run_get_method(req)
     output = EstimateResultDecoder.decode(result)
     print("canBuy:", output["canBuy"])
     print("needBaseAssetAmount:", output["needBaseAssetAmount"] / 10**9, "TON")
