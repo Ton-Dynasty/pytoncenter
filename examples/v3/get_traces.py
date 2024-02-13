@@ -1,6 +1,7 @@
+import asyncio
+
 from pytoncenter import get_client
 from pytoncenter.v3.models import *
-import asyncio
 
 
 async def main():
@@ -13,7 +14,7 @@ async def main():
         print("Account is active")
     else:
         raise Exception("Account is not active")
-    
+
     print("=====================================")
 
     # Get oracle metadata (run get method)
@@ -21,28 +22,28 @@ async def main():
     print(metadata)
 
     print("=====================================")
-    
+
     try:
         # Oracle contract is not a wallet, so it will raise an exception
         req = GetWalletRequest(address="kQCpk40ub48fvx89vSUjOTRy0vOEEZ4crOPPfLEvg88q1EeH")
         await client.get_wallet(req)
     except Exception as e:
         print(e)
-        
+
     print("=====================================")
 
     # Get transactions
     req = GetTransactionRequest(account="kQCpk40ub48fvx89vSUjOTRy0vOEEZ4crOPPfLEvg88q1EeH")
     transactions = await client.get_transactions(req)
-    print(transactions[0].hash)
-    
+    print(transactions[0].hash, transactions[0].now)
+
     print("=====================================")
 
     # Get transaction traces
     req = GetAdjacentTransactionsRequest(hash=transactions[0].hash)
     traces = await client.get_adjacent_transactions(req)
     print(traces)
-    
+
     print("=====================================")
 
 

@@ -1,10 +1,14 @@
+import asyncio
 import os
-from typing import Dict, List, Optional, Union, Literal, Tuple, OrderedDict, Any
-import aiohttp
 import warnings
-from pytoncenter.v3.models import *
-from pytoncenter.multicall import Multicallable
+from datetime import datetime
+from typing import Any, Dict, List, Literal, Optional, OrderedDict, Tuple, Union
+
+import aiohttp
+
 from pytoncenter.exception import TonCenterNotWalletException
+from pytoncenter.multicall import Multicallable
+from pytoncenter.v3.models import *
 
 
 class AsyncTonCenterClientV3(Multicallable):
@@ -165,3 +169,14 @@ class AsyncTonCenterClientV3(Multicallable):
     async def estimate_fee(self, req: EstimateFeeRequest) -> EstimateFeeResponse:
         resp = await self._async_post("estimateFee", req.model_dump(exclude_none=True))
         return EstimateFeeResponse(**resp)
+
+    async def subscribe_tx(self, account: str, start_time: Optional[datetime] = None, interval_in_second: float = 2):
+        cur_time = start_time
+
+        while True:
+            req = GetTransactionRequest(account=account, start_utime=cur_time, sort="asc", limit=10)
+            txs = await self.get_transactions(req)
+            for tx in txs:
+                yield tx
+            cur_time = txs[-1].now
+            await asyncio.sleep(interval_in_second)

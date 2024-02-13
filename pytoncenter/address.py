@@ -1,12 +1,13 @@
 from __future__ import annotations
-from .utils import crc16, string_to_bytes
+
 import base64
 import ctypes
-from typing import TypedDict
-from typing import Any
-from pydantic_core import CoreSchema, core_schema
-from pydantic import GetCoreSchemaHandler, TypeAdapter
+from typing import TypedDict, Union
 
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import CoreSchema, core_schema
+
+from .utils import crc16, string_to_bytes
 
 _AddressInfo = TypedDict(
     "_AddressInfo",
@@ -67,7 +68,7 @@ class Address:
     NON_BOUNCEABLE_TAG = 0x51
     TEST_FLAG = 0x80
 
-    def __init__(self, any_form: str):
+    def __init__(self, any_form: Union[str, Address]):
         if any_form is None:
             raise Exception("Invalid address")
 

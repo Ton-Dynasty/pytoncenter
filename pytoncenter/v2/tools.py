@@ -1,9 +1,12 @@
-from .types import TraceTx
-from typing import Callable, Optional, Dict
-from treelib import Node, Tree
+from typing import Callable, Dict, Optional, Union
+
 from tonpy import CellSlice
+from treelib import Node, Tree
+
 from pytoncenter.address import Address
 from pytoncenter.utils import get_opcode
+
+from .types import TraceTx
 
 __all__ = [
     "NamedFunction",
@@ -74,12 +77,13 @@ def create_named_mapping_func(mapping: Dict[Address, str], truncate_address: boo
     the original address can be truncated if truncate_address is True
     """
 
-    def namedFunction(address: Address) -> Optional[str]:
+    def namedFunction(address: Union[str, Address]) -> Optional[str]:
         """
         Truncate middle part of the address to make it more readable
         """
-        default = truncate_middle(address, 6, 6) if truncate_address else address.to_string(True, is_test_only=False)
-        return mapping.get(address, default)
+        _addr = Address(address)
+        default = truncate_middle(_addr, 6, 6) if truncate_address else _addr.to_string(True, is_test_only=False)
+        return mapping.get(_addr, default)
 
     return namedFunction
 
