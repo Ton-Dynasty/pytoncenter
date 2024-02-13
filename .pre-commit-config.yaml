@@ -9,18 +9,21 @@ repos:
       - id: check-yaml
       - id: end-of-file-fixer
 
-  - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.4
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.2.1
     hooks:
-      - id: flake8
-        args:
-          - --max-line-length=100
-          - --ignore=E131
+      - id: autoflake
+        args: [--remove-all-unused-imports, --in-place]
 
   - repo: https://github.com/PyCQA/isort
-    rev: 5.11.5
+    rev: 5.13.2
     hooks:
       - id: isort
-        exclude: migrations/
-        args:
-          - --line-length=100
+        name: isort
+        args: [--profile, black]
+
+  - repo: https://github.com/psf/black
+    rev: 24.2.0
+    hooks:
+      - id: black
+        name: black
