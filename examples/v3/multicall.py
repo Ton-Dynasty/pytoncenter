@@ -20,11 +20,9 @@ async def C():
 async def main():
     client = get_client(version="v3", network="testnet")
     results = await client.multicall(
-        {
-            "A": A(),
-            "B": B(),
-            "C": C(),
-        }
+        A(),
+        B(),
+        C(),
     )
     pprint(results)
 
