@@ -1,6 +1,7 @@
+from typing import Literal, overload
+
 from pytoncenter.v2.api import AsyncTonCenterClientV2
 from pytoncenter.v3.api import AsyncTonCenterClientV3
-from typing import Literal, Union, overload, Optional
 
 
 @overload
@@ -19,4 +20,4 @@ def get_client(version: Literal["v2", "v3"], network: Literal["mainnet", "testne
     raise ValueError(f"Invalid version {version}")
 
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"
