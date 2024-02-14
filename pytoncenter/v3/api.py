@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 import aiohttp
 
-from pytoncenter.exception import TonCenterNotWalletException
+from pytoncenter.exception import TonCenterException, TonCenterValidationException
 from pytoncenter.multicall import Multicallable
 from pytoncenter.v3.models import *
 
@@ -62,9 +62,10 @@ class AsyncTonCenterClientV3(Multicallable):
 
         result = await response.json()
         if not response.ok:
-            if response.status == 409:
-                raise TonCenterNotWalletException(409, result.get("error"))
-            response.raise_for_status()
+            if response.status == 422:
+                raise TonCenterValidationException(response.status, HTTPValidationError(detail=result.get("detail")))
+            else:
+                raise TonCenterException(response.status, result.get("error"))
         return result
 
     async def _async_get(self, handler: str, query: Optional[Dict[str, Any]] = None):
