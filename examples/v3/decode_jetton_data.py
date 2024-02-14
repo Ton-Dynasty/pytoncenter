@@ -33,6 +33,18 @@ async def main():
     jetton_data = decoder.decode(result)
     pprint(jetton_data, width=120)
 
+    print("===============Easier way get jetton data======================")
+    jettons = await client.get_jetton_masters(GetJettonMastersRequest(address="kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A"))
+    jetton = jettons[0]
+    print("Total Supply: ", jetton.total_supply)
+    print("Mintable: ", jetton.mintable)
+    print("last transaction lt: ", jetton.last_transaction_lt)
+    if jetton.jetton_content is not None:
+        print("Jetton content - Symbol: ", jetton.jetton_content.symbol)
+        print("Jetton content - Name: ", jetton.jetton_content.name)
+        print("Jetton content - Decimals: ", jetton.jetton_content.decimals)
+        print("Jetton content - Image: ", jetton.jetton_content.image)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

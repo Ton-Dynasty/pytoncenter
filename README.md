@@ -28,6 +28,8 @@ export TONCENTER_API_KEY=your_api_key
 
 ### Example 1. Decode Jetton Get Method Result (V3)
 
+Here is an example for decoding get method by declaring the decoder and Type of the field explicitly. Decoder will decode the result based on the type of the field. If you are not sure about the type of the field, you can use AutoDecoder to decode the result.
+
 ```python
 import asyncio
 from pprint import pprint
@@ -64,6 +66,54 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+```
+
+You may get the following jetton data in the console:
+
+```bash
+OrderedDict([('total_supply', 5000000000),
+             ('mintable', True),
+             ('admin_address', EQC8zFHM8LCMp9Xs--w3g9wmf7RwuDgJcQtV-oHZRSCqQZ__),
+             ('jetton_content', <CellSlice [9] bits, [1] refs, [A21FCFE4756B6AD7A1E88E65483CCDAB3BBBD9F8AEF5F5060C5FC8A36737AC36] hash>),
+             ('jetton_wallet_code', 'b5ee9c7241022501000a......'),])
+```
+
+If you use AutoDecoder, you may get the following result:
+
+```bash
+OrderedDict([('idx_0', 5000000000),
+             ('idx_1', -1), # Because auto decoder does not know the type, it will decode the result as number
+             ('idx_2', EQC8zFHM8LCMp9Xs--w3g9wmf7RwuDgJcQtV-oHZRSCqQZ__), # Address field will automatically decode to Address object
+             ('idx_3', 'b5ee9c7241022501000a......'), # Cell and Slice will apply b64decode to hex string
+             ('idx_4', 'b5ee9c7241022501000a......'),])
+```
+
+However, for jetton data, there is a more efficient way to retreive the result by V3 API.
+
+```python
+client = get_client(version="v3", network="testnet")
+jettons = await client.get_jetton_masters(GetJettonMastersRequest(address="kQBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jhrP-A"))
+jetton = jettons[0]
+print("Total Supply: ", jetton.total_supply)
+print("Mintable: ", jetton.mintable)
+print("last transaction lt: ", jetton.last_transaction_lt)
+if jetton.jetton_content is not None:
+    print("Jetton content - Symbol: ", jetton.jetton_content.symbol)
+    print("Jetton content - Name: ", jetton.jetton_content.name)
+    print("Jetton content - Decimals: ", jetton.jetton_content.decimals)
+    print("Jetton content - Image: ", jetton.jetton_content.image)
+```
+
+The output will be:
+
+```bash
+Total Supply:  5000000000
+Mintable:  True
+last transaction lt:  19051958000005
+Jetton content - Symbol:  USDT
+Jetton content - Name:  USDT
+Jetton content - Decimals:  6
+Jetton content - Image:  https://coinhere.io/wp-content/uploads/2020/08/Tether-USDT-icon-1.png
 ```
 
 ### Example 2. Obtain a Transaction Flow (V2)
