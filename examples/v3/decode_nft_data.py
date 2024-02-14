@@ -13,12 +13,14 @@ async def main():
     sorted_collections = sorted(collections, key=lambda x: int(x.next_item_index))
     largest_collection = sorted_collections[-1]
     print("collection", largest_collection.address, "has", int(largest_collection.next_item_index), "items.")
+    print(largest_collection.collection_content)
 
     print("=====================================")
 
     nft_items = await client.get_nft_items(GetNFTItemsRequest(collection_address=largest_collection.address))
     first_item = nft_items[0]
     print("item index", int(first_item.index), "address", first_item.address)
+    print(first_item.content)
 
     print("=====================================")
 
