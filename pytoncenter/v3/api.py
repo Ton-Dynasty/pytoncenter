@@ -168,7 +168,7 @@ class AsyncTonCenterClientV3(Multicallable):
         return WalletInfo(**resp)
 
     async def send_message(self, req: ExternalMessage) -> SentMessage:
-        resp = await self._async_post("sendMessage", req.model_dump(exclude_none=True))
+        resp = await self._async_post("message", req.model_dump(exclude_none=True))
         return SentMessage(**resp)
 
     async def run_get_method(self, req: RunGetMethodRequest) -> RunGetMethodResponse:
