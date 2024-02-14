@@ -120,6 +120,13 @@ class Address:
             self._is_bounceable = parse_result["is_bounceable"]
 
     @property
+    def wc(self) -> int:
+        """
+        Alias for workchain, compatible with tonsdk
+        """
+        return self._wc
+
+    @property
     def workchain(self) -> int:
         return self._wc
 

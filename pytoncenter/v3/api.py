@@ -2,7 +2,7 @@ import asyncio
 import os
 import warnings
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union, overload
 
 import aiohttp
 
@@ -124,9 +124,20 @@ class AsyncTonCenterClientV3(Multicallable):
         resp = await self._async_get("nft/collections", req.model_dump(exclude_none=True))
         return [NFTCollection(**r) for r in resp]
 
-    async def get_nft_items(self, req: Optional[GetNFTItemsRequest] = None) -> List[NFTItem]:
+    @overload
+    async def get_nft_items(self, req: Optional[GetNFTItemsRequest] = None) -> List[NFTItem]: ...
+
+    @overload
+    async def get_nft_items(self, req: GetSpecifiedNFTItemRequest) -> Optional[NFTItem]: ...
+
+    async def get_nft_items(self, req: Optional[Union[GetNFTItemsRequest, GetSpecifiedNFTItemRequest]] = None) -> Union[List[NFTItem], Optional[NFTItem]]:
         req = req or GetNFTItemsRequest()
         resp = await self._async_get("nft/items", req.model_dump(exclude_none=True))
+        if isinstance(req, GetSpecifiedNFTItemRequest):
+            if len(resp) == 0:
+                return None
+            assert len(resp) == 1, "The response should contain only one item"
+            return NFTItem(**resp[0])
         return [NFTItem(**r) for r in resp]
 
     async def get_nft_transfers(self, req: Optional[GetNFTTransfersRequest] = None) -> List[NFTTransfer]:
@@ -139,9 +150,20 @@ class AsyncTonCenterClientV3(Multicallable):
         resp = await self._async_get("jetton/masters", req.model_dump(exclude_none=True))
         return [JettonMaster(**r) for r in resp]
 
-    async def get_jetton_wallets(self, req: Optional[GetJettonWalletsRequest] = None) -> List[JettonWallet]:
+    @overload
+    async def get_jetton_wallets(self, req: Optional[GetJettonWalletsRequest] = None) -> List[JettonWallet]: ...
+
+    @overload
+    async def get_jetton_wallets(self, req: GetSpecifiedJettonWalletRequest) -> Optional[JettonWallet]: ...
+
+    async def get_jetton_wallets(self, req: Optional[Union[GetJettonWalletsRequest, GetSpecifiedJettonWalletRequest]] = None) -> Union[List[JettonWallet], Optional[JettonWallet]]:
         req = req or GetJettonWalletsRequest()
         resp = await self._async_get("jetton/wallets", req.model_dump(exclude_none=True))
+        if isinstance(req, GetSpecifiedJettonWalletRequest):
+            if len(resp) == 0:
+                return None
+            assert len(resp) == 1, "The response should contain only one wallet"
+            return JettonWallet(**resp[0])
         return [JettonWallet(**r) for r in resp]
 
     async def get_jetton_transfers(self, req: Optional[GetJettonTransfersRequest] = None) -> List[JettonTransfer]:

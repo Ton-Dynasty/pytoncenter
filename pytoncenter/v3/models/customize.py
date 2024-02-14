@@ -26,6 +26,8 @@ __all__ = [
     "GetTopAccountsByBalanceRequest",
     "GetAccountRequest",
     "GetWalletRequest",
+    "GetSpecifiedJettonWalletRequest",
+    "GetSpecifiedNFTItemRequest",
 ]
 
 
@@ -173,6 +175,11 @@ class GetNFTItemsRequest(BaseModel):
     offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
+class GetSpecifiedNFTItemRequest(BaseModel):
+    owner_address: AddressLike = Field(..., description="Address of NFT owner. Must be sent in hex, base64 and base64url forms")
+    collection_address: AddressLike = Field(..., description="NFT collection address. Must be sent in hex, base64 and base64url forms")
+
+
 class GetNFTTransfersRequest(BaseModel):
     address: Optional[AddressLike] = Field(default=None, description="Address of NFT owner. Must be sent in hex, base64 and base64url forms")
     item_address: Optional[AddressLike] = Field(default=None, description="NFT item address. Must be sent in hex, base64 and base64url forms")
@@ -214,6 +221,11 @@ class GetJettonWalletsRequest(BaseModel):
     jetton_address: Optional[AddressLike] = Field(default=None, description="Jetton Master. Must be sent in hex, base64 and base64url forms")
     limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
     offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
+
+
+class GetSpecifiedJettonWalletRequest(BaseModel):
+    owner_address: AddressLike = Field(..., description="Address of Jetton wallet's owner. Must be sent in hex, base64 and base64url forms")
+    jetton_address: AddressLike = Field(..., description="Jetton Master. Must be sent in hex, base64 and base64url forms")
 
 
 class JettonFilter(BaseModel):
