@@ -13,7 +13,7 @@ class AccountBalance(BaseModel):
 
 
 class BinaryComment(BaseModel):
-    type: Literal["binary_comment"] = Field("binary_comment", title="Type")
+    type: Literal["binary_comment"] = Field(default="binary_comment", title="Type")
     hex_comment: str = Field(..., title="Hex Comment")
 
 
@@ -126,12 +126,20 @@ class MessageInitState(BaseModel):
     body: str = Field(..., title="Body")
 
 
+class NFTMetadata(BaseModel):
+    uri: Optional[str] = Field(default=None, description="Used by `Semi-chain content layout`. ASCII string. A URI pointing to JSON document with metadata.")
+    name: Optional[str] = Field(default=None, description="UTF8 string. Identifies the asset.")
+    description: Optional[str] = Field(default=None, description="UTF8 string. Describes the asset.")
+    image: Optional[str] = Field(default=None, description="ASCII string. A URI pointing to a image with mime type image.")
+    image_data: Optional[str] = Field(default=None, description="Either binary representation of the image for onchain layout or base64 for offchain layout.")
+
+
 class NFTCollection(BaseModel):
     address: AddressLike = Field(..., title="Address")
     owner_address: Optional[AddressLike] = Field(..., title="Owner Address")
-    last_transaction_lt: str = Field(..., title="Last Transaction Lt")
-    next_item_index: str = Field(..., title="Next Item Index")
-    collection_content: Any = Field(..., title="Collection Content")
+    last_transaction_lt: int = Field(..., title="Last Transaction Lt")
+    next_item_index: int = Field(..., title="Next Item Index")
+    collection_content: Optional[NFTMetadata] = Field(default=None, title="Collection Content")
     code_hash: str = Field(..., title="Code Hash")
     data_hash: str = Field(..., title="Data Hash")
 
@@ -141,11 +149,11 @@ class NFTItem(BaseModel):
     collection_address: Optional[AddressLike] = Field(..., title="Collection Address")
     owner_address: Optional[AddressLike] = Field(..., title="Owner Address")
     init: bool = Field(..., title="Init")
-    index: str = Field(..., title="Index")
+    index: int = Field(..., title="Index")
     last_transaction_lt: int = Field(..., title="Last Transaction Lt")
     code_hash: str = Field(..., title="Code Hash")
     data_hash: str = Field(..., title="Data Hash")
-    content: Any = Field(..., title="Content")
+    content: Optional[NFTMetadata] = Field(default=None, title="Content")
     collection: Optional[NFTCollection]
 
 
@@ -173,7 +181,7 @@ class SentMessage(BaseModel):
 
 
 class TextComment(BaseModel):
-    type: Literal["text_comment"] = Field("text_comment", title="Type")
+    type: Literal["text_comment"] = Field(default="text_comment", title="Type")
     comment: str = Field(..., title="Comment")
 
 
