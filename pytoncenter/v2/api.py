@@ -2,24 +2,26 @@ import asyncio
 import os
 import uuid
 import warnings
-from typing import Any, Dict, List, Literal, Optional, OrderedDict, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import aiohttp
 from tonpy import Cell
 
 from pytoncenter.exception import TonException
 from pytoncenter.multicall import Multicallable
+from pytoncenter.requestor import AsyncRequestor
 
 from .types import *
 
 
-class AsyncTonCenterClientV2(Multicallable):
+class AsyncTonCenterClientV2(Multicallable, AsyncRequestor):
     def __init__(
         self,
         network: Union[Literal["mainnet"], Literal["testnet"]],
         *,
         custom_api_key: Optional[str] = None,
         custom_base_url: Optional[str] = None,
+        qps: float = 5.0,
     ) -> None:
         api_key = os.getenv("TONCENTER_API_KEY", custom_api_key)
         # show warning if api_key is None
@@ -35,6 +37,7 @@ class AsyncTonCenterClientV2(Multicallable):
             prefix = "" if network == "mainnet" else "testnet."
             self.base_url = f"https://{prefix}toncenter.com/api/v2"
         self.api_key = api_key
+        super().__init__(qps)
 
     def _get_request_headers(self) -> Dict[str, Any]:
         headers = {
@@ -44,9 +47,6 @@ class AsyncTonCenterClientV2(Multicallable):
         if self.api_key:
             headers["X-API-KEY"] = self.api_key
         return headers
-
-    def _serialize(self, params: OrderedDict[str, str]) -> List[Tuple[str, Any]]:
-        return [(k, v) for k, v in params.items()]
 
     async def _parse_response(self, response: aiohttp.ClientResponse):
         """
@@ -78,20 +78,13 @@ class AsyncTonCenterClientV2(Multicallable):
 
     async def _async_get(self, handler: str, query: Optional[Dict[str, Any]] = None):
         url = f"{self.base_url}/{handler}"
-        async with aiohttp.ClientSession() as session:
-            params = {k: v for k, v in query.items() if v is not None} if query is not None else None
-            async with session.get(url=url, headers=self._get_request_headers(), params=params) as response:
-                return await self._parse_response(response)
+        params = {k: v for k, v in query.items() if v is not None} if query is not None else None
+        return await self._underlying_call("GET", url, params=params)
 
-    async def _async_post(self, handler: str, payload: Dict[str, Any]):
+    async def _async_post(self, handler: str, payload: Optional[Dict[str, Any]] = None):
         url = f"{self.base_url}/{handler}"
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                url=url,
-                headers=self._get_request_headers(),
-                json={k: v for k, v in payload.items() if v is not None},
-            ) as response:
-                return await self._parse_response(response)
+        payload = {k: v for k, v in payload.items() if v is not None} if payload is not None else None
+        return await self._underlying_call("POST", url, payload=payload)
 
     async def get_address_information(self, address: str) -> WalletInformation:
         return await self._async_get("getAddressInformation", {"address": address})
