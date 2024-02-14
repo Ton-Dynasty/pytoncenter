@@ -8,6 +8,22 @@
 
 Pytoncenter is a [TON Center](https://toncenter.com/) client with type hints that introduces advanced features such as **address subscriptions**, **obtaining transaction flows** similar to TON Viewer, **parallel processing of multiple calls**, and **robust debug tools**. Developers can use this package to create TON data analysis platforms, Dapp backends, and other services with enhanced functionality and efficiency.
 
+
+
+## Features
+
+Enhance your development workflow with Pytoncenter, offering:
+
+1. **Rich Typing**: Elevate your coding experience with comprehensive typing for improved code clarity and error detection.
+2. **Field Validation & Transformation**: Automate data integrity checks and format conversions supported by [Pydantic](https://docs.pydantic.dev/latest/), ensuring data accuracy effortlessly.
+3. **TVM Data Format Conversion**: Seamlessly interact with TVM by automatically converting complex data structures like Addresses and Cells, based on C++ Python binding [Tonpy](https://tonpy.dton.io/)
+4. **Concurrency & Rate Limiting**: Execute parallel requests smoothly while managing request rates efficiently to maintain optimal performance, thanks to the [aiolimiter](https://aiolimiter.readthedocs.io/en/latest/)
+5. **Advanced Simplicity**: Access sophisticated functionalities like transaction subscriptions, message parsing, and method result decoding with ease and simplicity.
+6. **V2 & V3 API Support**: Supporting both [V2](https://toncenter.com/api/v2/) and [V3](https://toncenter.com/api/v3/) APIs, Pytoncenter provides a comprehensive range of features for your development needs.
+
+Simplify your development process with our feature-rich package designed for efficiency and ease of use.
+
+
 ## Quick Start
 
 ### 1. Install the package
@@ -25,8 +41,43 @@ To use the TON Center API, you need to obtain an API key from the [TON Center](h
 ```bash
 export TONCENTER_API_KEY=your_api_key
 ```
+<details>
+<summary>Example 1. Get Account Info (API V3)</summary>
 
-### Example 1. Decode Jetton Get Method Result (V3)
+This example demonstrates how to obtain account information and jetton wallet balances using the TON Center API V3.
+
+```python
+from pytoncenter import get_client
+from pytoncenter.v3.models import *
+import asyncio
+
+
+async def main():
+    client = get_client(version="v3", network="testnet")
+    my_address = "0QC8zFHM8LCMp9Xs--w3g9wmf7RwuDgJcQtV-oHZRSCqQXmw"
+    account = await client.get_account(GetAccountRequest(address=my_address))
+    jetton_wallets = await client.get_jetton_wallets(GetJettonWalletsRequest(owner_address=my_address, limit=10))
+    masters = await client.multicall({w.address: client.get_jetton_masters(w.jetton) for w in jetton_wallets})
+    print("=== Account Info ===")
+    print(" -", "Symbol", "TON", "Balance:", account.balance / 1e9)
+    print("=== Jetton Wallets ===")
+    for wallet in jetton_wallets:
+        jetton = masters.get(wallet.address, None)
+        if jetton is None:
+            continue
+        content = jetton.jetton_content
+        symbol = content.symbol if content else "unknown"
+        decimals = (content.decimals if content else 0) or 9
+        print(" -", "Symbol", symbol, "Balance", wallet.balance / 10**decimals)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+</details>
+
+<details>
+<summary>Example 2. Decode Get Method Result (API V3)</summary>
 
 Here is an example for decoding get method by declaring the decoder and Type of the field explicitly. Decoder will decode the result based on the type of the field. If you are not sure about the type of the field, you can use AutoDecoder to decode the result.
 
@@ -115,10 +166,13 @@ Jetton content - Name:  USDT
 Jetton content - Decimals:  6
 Jetton content - Image:  https://coinhere.io/wp-content/uploads/2020/08/Tether-USDT-icon-1.png
 ```
+</details>
 
-### Example 2. Obtain a Transaction Flow (V2)
 
-The following example demonstrates how to obtain the transaction flow for a specified transaction. This transaction is associated with a contract deployed using the [TON Dynasty Contract Jetton Template](https://github.com/Ton-Dynasty/tondynasty-contracts/blob/main/contracts/jetton_example.tact).
+<details>
+<summary>Example 3. Obtain Transaction trace (API V2)</summary>
+
+The following example demonstrates how to obtain the transaction trace for a specified transaction. This transaction is associated with a contract deployed using the [TON Dynasty Contract Jetton Template](https://github.com/Ton-Dynasty/tondynasty-contracts/blob/main/contracts/jetton_example.tact).
 
 - Contract Address on [Testnet TON Viewer](https://testnet.tonviewer.com/kQAreQ23eabjRO5glLCbhZ4KxQ9SOIjtw2eM2PuEXXhIZeh3)
 - JettonMint Message Transaction on [Testnet TON Viewer](https://testnet.tonviewer.com/transaction/0f8d6b47a00d4914cb447b34cbce42e9e40c1d188e99ab76f56b0685b3532365)
@@ -158,6 +212,7 @@ Alan WalletV4R2 -> Jetton Master (Mint:1) [1.0 TON]
 └── Jetton Master -> Jetton Wallet (0x178d4519) [0.955002 TON]
     └── Jetton Wallet -> Alan WalletV4R2 (0xd53276db) [0.853806 TON]
 ```
+</details>
 
 ## Examples (V3)
 1. [Get Transaction Traces] - Waiting for TONCENTER to fix their api

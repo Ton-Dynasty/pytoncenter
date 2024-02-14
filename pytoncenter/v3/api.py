@@ -6,13 +6,15 @@ from typing import Any, Dict, List, Literal, Optional, Union, overload
 
 import aiohttp
 
+from pytoncenter.address import Address
 from pytoncenter.exception import TonCenterException, TonCenterValidationException
 from pytoncenter.multicall import Multicallable
+from pytoncenter.requestor import AsyncRequestor
 from pytoncenter.v3.models import *
 
 
-class AsyncTonCenterClientV3(Multicallable):
-    def __init__(self, network: Union[Literal["mainnet"], Literal["testnet"]], *, custom_api_key: Optional[str] = None, custom_base_url: Optional[str] = None) -> None:
+class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
+    def __init__(self, network: Union[Literal["mainnet"], Literal["testnet"]], *, custom_api_key: Optional[str] = None, custom_base_url: Optional[str] = None, qps: float = 5, **kwargs) -> None:
         api_key = os.getenv("TONCENTER_API_KEY", custom_api_key)
         # show warning if api_key is None
         if not api_key:
@@ -27,6 +29,9 @@ class AsyncTonCenterClientV3(Multicallable):
             prefix = "" if network == "mainnet" else "testnet."
             self.base_url = f"https://{prefix}toncenter.com/api/v3"
         self.api_key = api_key
+
+        assert qps > 0, "QPS must be greater than 0"
+        super().__init__(qps)
 
     def _get_request_headers(self) -> Dict[str, Any]:
         headers = {
@@ -70,22 +75,19 @@ class AsyncTonCenterClientV3(Multicallable):
 
     async def _async_get(self, handler: str, query: Optional[Dict[str, Any]] = None):
         url = f"{self.base_url}/{handler}"
-        async with aiohttp.ClientSession() as session:
-            params = {k: v for k, v in query.items() if v is not None} if query is not None else None
-            async with session.get(url=url, headers=self._get_request_headers(), params=params) as response:
-                return await self._parse_response(response)
+        params = {k: v for k, v in query.items() if v is not None} if query is not None else None
+        return await self._underlying_call("GET", url, params=params)
 
     async def _async_post(self, handler: str, payload: Dict[str, Any]):
         url = f"{self.base_url}/{handler}"
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url=url, headers=self._get_request_headers(), json={k: v for k, v in payload.items() if v is not None}) as response:
-                return await self._parse_response(response)
+        payload = {k: v for k, v in payload.items() if v is not None}
+        return await self._underlying_call("POST", url, payload=payload)
 
     async def get_masterchain_info(self) -> MasterchainInfo:
         return await self._async_get("masterchainInfo")
 
     async def get_blocks(self, req: Optional[GetBlockRequest] = None) -> List[Block]:
-        req = req or GetBlockRequest()
+        req = req if req is not None else GetBlockRequest()
         resp = await self._async_get("blocks", req.model_dump(exclude_none=True))
         return [Block(**r) for r in resp]
 
@@ -115,12 +117,12 @@ class AsyncTonCenterClientV3(Multicallable):
         return [TransactionTrace(**r) for r in resp]
 
     async def get_messages(self, req: Optional[GetMessagesRequest] = None) -> List[Message]:
-        req = req or GetMessagesRequest()
+        req = req if req is not None else GetMessagesRequest()
         resp = await self._async_get("messages", req.model_dump(exclude_none=True))
         return [Message(**r) for r in resp]
 
     async def get_nft_collections(self, req: Optional[GetNFTCollectionsRequest] = None) -> List[NFTCollection]:
-        req = req or GetNFTCollectionsRequest()
+        req = req if req is not None else GetNFTCollectionsRequest()
         resp = await self._async_get("nft/collections", req.model_dump(exclude_none=True))
         return [NFTCollection(**r) for r in resp]
 
@@ -131,7 +133,7 @@ class AsyncTonCenterClientV3(Multicallable):
     async def get_nft_items(self, req: GetSpecifiedNFTItemRequest) -> Optional[NFTItem]: ...
 
     async def get_nft_items(self, req: Optional[Union[GetNFTItemsRequest, GetSpecifiedNFTItemRequest]] = None) -> Union[List[NFTItem], Optional[NFTItem]]:
-        req = req or GetNFTItemsRequest()
+        req = req if req is not None else GetNFTItemsRequest()
         resp = await self._async_get("nft/items", req.model_dump(exclude_none=True))
         if isinstance(req, GetSpecifiedNFTItemRequest):
             if len(resp) == 0:
@@ -141,13 +143,33 @@ class AsyncTonCenterClientV3(Multicallable):
         return [NFTItem(**r) for r in resp]
 
     async def get_nft_transfers(self, req: Optional[GetNFTTransfersRequest] = None) -> List[NFTTransfer]:
-        req = req or GetNFTTransfersRequest()
+        req = req if req is not None else GetNFTTransfersRequest()
         resp = await self._async_get("nft/transfers", req.model_dump(exclude_none=True))
         return [NFTTransfer(**r) for r in resp]
 
+    @overload
     async def get_jetton_masters(self, req: Optional[GetJettonMastersRequest] = None) -> List[JettonMaster]:
-        req = req or GetJettonMastersRequest()
+        """
+        get_jetton_masters returns the jetton masters.
+        """
+
+    @overload
+    async def get_jetton_masters(self, req: AddressLike) -> Optional[JettonMaster]:
+        """
+        get_jetton_masters returns the specified jetton master with its address as the parameter
+        """
+
+    async def get_jetton_masters(self, req: Union[Optional[GetJettonMastersRequest], AddressLike] = None) -> Union[List[JettonMaster], Optional[JettonMaster]]:
+        req = req if req is not None else GetJettonMastersRequest()
+        is_address = isinstance(req, (str, Address))
+        if is_address:
+            req = GetJettonMastersRequest(address=req)
         resp = await self._async_get("jetton/masters", req.model_dump(exclude_none=True))
+        if is_address:
+            if len(resp) == 0:
+                return None
+            assert len(resp) == 1, "The response should contain only one master"
+            return JettonMaster(**resp[0])
         return [JettonMaster(**r) for r in resp]
 
     @overload
@@ -157,7 +179,7 @@ class AsyncTonCenterClientV3(Multicallable):
     async def get_jetton_wallets(self, req: GetSpecifiedJettonWalletRequest) -> Optional[JettonWallet]: ...
 
     async def get_jetton_wallets(self, req: Optional[Union[GetJettonWalletsRequest, GetSpecifiedJettonWalletRequest]] = None) -> Union[List[JettonWallet], Optional[JettonWallet]]:
-        req = req or GetJettonWalletsRequest()
+        req = req if req is not None else GetJettonWalletsRequest()
         resp = await self._async_get("jetton/wallets", req.model_dump(exclude_none=True))
         if isinstance(req, GetSpecifiedJettonWalletRequest):
             if len(resp) == 0:
@@ -167,17 +189,17 @@ class AsyncTonCenterClientV3(Multicallable):
         return [JettonWallet(**r) for r in resp]
 
     async def get_jetton_transfers(self, req: Optional[GetJettonTransfersRequest] = None) -> List[JettonTransfer]:
-        req = req or GetJettonTransfersRequest()
+        req = req if req is not None else GetJettonTransfersRequest()
         resp = await self._async_get("jetton/transfers", req.model_dump(exclude_none=True))
         return [JettonTransfer(**r) for r in resp]
 
     async def get_jetton_burns(self, req: Optional[GetJettonBurnsRequest] = None) -> List[JettonBurn]:
-        req = req or GetJettonBurnsRequest()
+        req = req if req is not None else GetJettonBurnsRequest()
         resp = await self._async_get("jetton/burns", req.model_dump(exclude_none=True))
         return [JettonBurn(**r) for r in resp]
 
     async def get_top_accounts_by_balance(self, req: Optional[GetTopAccountsByBalanceRequest] = None) -> List[AccountBalance]:
-        req = req or GetTopAccountsByBalanceRequest()
+        req = req if req is not None else GetTopAccountsByBalanceRequest()
         resp = await self._async_get("topAccountsByBalance", req.model_dump(exclude_none=True))
         return [AccountBalance(**r) for r in resp]
 

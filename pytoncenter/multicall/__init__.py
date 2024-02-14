@@ -1,18 +1,21 @@
 import asyncio
-from typing import Any, Coroutine, Dict, Iterable, List, overload
+from typing import Any, Coroutine, Dict, Iterable, List, TypeVar, overload
+
+T = TypeVar("T")
+K = TypeVar("K")
 
 
 class Multicallable:
     @overload
-    async def multicall(self, *coros: Coroutine[Any, Any, Any]) -> List[Any]: ...
+    async def multicall(self, *coros: Coroutine[Any, Any, T]) -> List[T]: ...
 
     @overload
-    async def multicall(self, coros: Dict[str, Coroutine[Any, Any, Any]]) -> Dict[str, Any]: ...
+    async def multicall(self, coros: Dict[K, Coroutine[Any, Any, T]]) -> Dict[K, T]: ...
 
     @overload
-    async def multicall(self, coros: List[Coroutine[Any, Any, Any]]) -> List[Any]: ...
+    async def multicall(self, coros: List[Coroutine[Any, Any, T]]) -> List[T]: ...
 
-    async def multicall(self, *args, **kwargs):
+    async def multicall(self, *args, **kwargs) -> Any:
         """
         With multicall, you can execute multiple async function calls by this method.
         This function will return a list of results or a dictionary of results if you pass a dictionary of coroutines.
