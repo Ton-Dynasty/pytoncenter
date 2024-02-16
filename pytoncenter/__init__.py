@@ -20,4 +20,4 @@ def get_client(version: Literal["v2", "v3"], network: Literal["mainnet", "testne
     raise ValueError(f"Invalid version {version}")
 
 
-__version__ = "0.0.10"
+__version__ = "0.0.11"
