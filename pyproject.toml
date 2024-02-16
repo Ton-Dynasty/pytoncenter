@@ -14,6 +14,9 @@ treelib = "^1.7.0"
 pydantic = "^2.6.1"
 pre-commit = "^3.6.1"
 aiolimiter = "^1.1.0"
+deprecated = "^1.2.14"
+click = "^8.1.7"
+pyfiglet = "^1.0.2"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -24,5 +27,8 @@ datamodel-code-generator = "^0.25.3"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+pytoncenter = "pytoncenter.__main__:cli"
 
 [tool.poetry_bumpversion.file."pytoncenter/__init__.py"]

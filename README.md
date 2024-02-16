@@ -168,9 +168,71 @@ Jetton content - Image:  https://coinhere.io/wp-content/uploads/2020/08/Tether-U
 ```
 </details>
 
+<details>
+<summary>Example 3. Customization</summary>
+
+```python
+# you can customize the qps by passing the qps parameter, default is 9.5 if api key is provided, otherwise 1
+client = get_client(version="v2", network="mainnet", qps=7.77)
+
+# By default, the client will read the TONCENTER_API_KEY from the environment variable, you can pass the api_key parameter to customize the api key
+client = get_client(version="v2", network="mainnet", api_key="you-api-key")
+
+# By default, the client will use the default endpoint by network, you can pass the custom_endpoint parameter to customize the endpoint
+client = get_client(version="v3", network="mainnet", qps=3.14, custom_endpoint="https://api.toncenter.com/v3")
+```
+
+</details>
 
 <details>
-<summary>Example 3. Obtain Transaction trace (API V2)</summary>
+<summary>Example 4. Get transaction trace</summary>
+
+```python
+import asyncio
+
+from pytoncenter import get_client
+from pytoncenter.v3.models import *
+from pytoncenter.address import Address
+from pytoncenter.utils import format_trace, create_address_mapping
+
+"""
+Take this transaction as example:
+https://testnet.tonviewer.com/transaction/84b7c9467a0a24e7a59a5e224e9ef8803563621f4710fe8536ae7803fe245d61
+
+The output transactions should be the whole trace of the transaction. The source transaction hash is
+https://testnet.tonviewer.com/transaction/dc40feab455e86fa0736508febed224891c965ef6cbf55f5ec309247e8d38664
+"""
+
+
+async def main():
+    client = get_client(version="v3", network="testnet")
+    trace = await client.get_trace_alternative(GetTransactionTraceRequest(hash="84b7c9467a0a24e7a59a5e224e9ef8803563621f4710fe8536ae7803fe245d61", sort="asc"))
+    addr_mapping = create_address_mapping(
+        {
+            Address("0QApdUMEOUuHnBo-RSdbikkZZ3qWItZLdXjyff9lN_eS5Zib"): "Alan Wallet V4",
+            Address("kQCQ1B7B7-CrvxjsqgYT90s7weLV-IJB2w08DBslDdrIXucv"): "Alan USD Jetton Wallet",
+            Address("kQDO_0Z0SuVpqpaNE0dPxUiFCNDpdR4ODW9KQAwgQGwc5wiB"): "Oracle Jetton Wallet",
+            Address("kQCpk40ub48fvx89vSUjOTRy0vOEEZ4crOPPfLEvg88q1EeH"): "Oracle",
+            Address("kQA0FY6YIacA0MgDlKN_qMQuXVZqL3qStyyaNkVB-svHQqsJ"): "New Alarm",
+        }
+    )
+    output = format_trace(trace, address_mapping=addr_mapping)
+    print(output)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+```
+
+Sample output:
+
+<img src="./docs/images/v3-trace.png" alt="v3-trace"/>
+
+</details>
+
+<details>
+<summary>Example 5. Obtain Transaction trace (API V2)</summary>
 
 The following example demonstrates how to obtain the transaction trace for a specified transaction. This transaction is associated with a contract deployed using the [TON Dynasty Contract Jetton Template](https://github.com/Ton-Dynasty/tondynasty-contracts/blob/main/contracts/jetton_example.tact).
 
@@ -215,11 +277,14 @@ Alan WalletV4R2 -> Jetton Master (Mint:1) [1.0 TON]
 </details>
 
 ## Examples (V3)
-1. [Get Transaction Traces] - Waiting for TONCENTER to fix their api
+1. [Get Transaction Traces](./examples/v3//get_tx_trace.py)
 2. [Decode Jetton Get Method Result](./examples/v3/decode_jetton_data.py)
 3. [Decode Custom Get Method Result](./examples/v3/decode_custom_data.py)
 4. [Multicall](./examples/v3/multicall.py)
 5. [Subscribe transactions for address](./examples/v3/subscribe_jetton_wallet.py)
+6. [Get Account Balance](./examples/v3/get_account_balance.py)
+7. [Get Previous Transaction](./examples/v3/get_prev_tx.py)
+8. [Get Next Transaction](./examples//v3/get_next_tx.py)
 
 ## Examples (V2)
 1. [Get Transaction Traces](./examples/v2/transaction_trace.py)
