@@ -2,7 +2,7 @@ import asyncio
 import os
 import warnings
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, Union, overload
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union, overload
 
 import aiohttp
 
@@ -14,23 +14,34 @@ from pytoncenter.v3.models import *
 
 
 class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
-    def __init__(self, network: Union[Literal["mainnet"], Literal["testnet"]], *, custom_api_key: Optional[str] = None, custom_base_url: Optional[str] = None, qps: float = 5, **kwargs) -> None:
-        api_key = os.getenv("TONCENTER_API_KEY", custom_api_key)
+    def __init__(
+        self,
+        network: Union[Literal["mainnet"], Literal["testnet"]],
+        *,
+        api_key: Optional[str] = None,
+        custom_endpoint: Optional[str] = None,
+        qps: Optional[float] = None,
+        **kwargs,
+    ) -> None:
+        api_key = os.getenv("TONCENTER_API_KEY", api_key)
         # show warning if api_key is None
         if not api_key:
             warnings.warn(
-                "API key is not provided. TonCenter API is rate limited to 1 request per second. Suggesting providing it in environment variable `TONCENTER_API_KEY` or custom_api_key to increase the rate limit.",
+                "API key is not provided. TonCenter API is rate limited to 1 request per second. Suggesting providing it in environment variable `TONCENTER_API_KEY` or api_key to increase the rate limit.",
                 RuntimeWarning,
             )
-        assert (network in ["mainnet", "testnet"]) or (custom_base_url is not None), "Network or custom_base_url must be provided"
-        if custom_base_url is not None:
-            self.base_url = custom_base_url
+        assert (network in ["mainnet", "testnet"]) or (custom_endpoint is not None), "Network or custom_endpoint must be provided"
+        if custom_endpoint is not None:
+            self.base_url = custom_endpoint
         else:
             prefix = "" if network == "mainnet" else "testnet."
             self.base_url = f"https://{prefix}toncenter.com/api/v3"
         self.api_key = api_key
 
-        assert qps > 0, "QPS must be greater than 0"
+        if qps is not None:
+            assert qps > 0, "QPS must be greater than 0"
+        else:
+            qps = 9.5 if self.api_key else 1
         super().__init__(qps)
 
     def _get_request_headers(self) -> Dict[str, Any]:
@@ -95,9 +106,20 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         resp = await self._async_get("masterchainBlockShards", req.model_dump(exclude_none=True))
         return [Block(**r) for r in resp]
 
-    async def get_transactions(self, req: Optional[GetTransactionRequest] = None) -> List[Transaction]:
-        req = req or GetTransactionRequest()
+    @overload
+    async def get_transactions(self, req: Optional[GetTransactionByHashRequest]) -> Optional[Transaction]: ...
+
+    @overload
+    async def get_transactions(self, req: Optional[GetTransactionsRequest]) -> List[Transaction]: ...
+
+    async def get_transactions(self, req: Union[Optional[GetTransactionsRequest], GetTransactionByHashRequest] = None) -> Union[List[Transaction], Optional[Transaction]]:
+        req = req or GetTransactionsRequest()
         resp = await self._async_get("transactions", req.model_dump(exclude_none=True))
+        if isinstance(req, GetTransactionByHashRequest):
+            if len(resp) == 0:
+                return None
+            assert len(resp) == 1, "The response should contain only one transaction"
+            return Transaction(**resp[0])
         return [Transaction(**r) for r in resp]
 
     async def get_transactions_by_masterchain_block(self, req: GetTransactionByMasterchainBlockRequest) -> List[Transaction]:
@@ -108,17 +130,45 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         resp = await self._async_get("transactionsByMessage", req.model_dump(exclude_none=True))
         return [Transaction(**r) for r in resp]
 
-    async def get_adjacent_transactions(self, req: GetAdjacentTransactionsRequest) -> List[Transaction]:
-        resp = await self._async_get("adjacentTransactions", req.model_dump(exclude_none=True))
-        return [Transaction(**r) for r in resp]
+    @overload
+    async def get_adjacent_transactions(self, req: GetAdjacentTransactionsRequest) -> List[Transaction]: ...
+
+    @overload
+    async def get_adjacent_transactions(self, req: GetSourceTransactionRequest) -> Optional[Transaction]: ...
+
+    async def get_adjacent_transactions(self, req: Union[GetAdjacentTransactionsRequest, GetSourceTransactionRequest]) -> Union[List[Transaction], Optional[Transaction]]:
+        is_single_source = isinstance(req, GetSourceTransactionRequest)
+        req = GetAdjacentTransactionsRequest(hash=req.hash, direction="in", limit=1) if is_single_source else req
+        try:
+            resp = await self._async_get("adjacentTransactions", req.model_dump(exclude_none=True))
+            if is_single_source:
+                assert len(resp) == 1, "The response should contain one transaction"
+                return Transaction(**resp[0])
+            else:
+                return [Transaction(**r) for r in resp]
+        except TonCenterException as e:
+            if e.code == 404:
+                return None if is_single_source else []
+            raise e
 
     async def get_transaction_trace(self, req: GetTransactionTraceRequest) -> List[TransactionTrace]:
         resp = await self._async_get("traces", req.model_dump(exclude_none=True))
         return [TransactionTrace(**r) for r in resp]
 
-    async def get_messages(self, req: Optional[GetMessagesRequest] = None) -> List[Message]:
+    @overload
+    async def get_messages(self, req: GetMessageByHashRequest) -> Optional[Message]: ...
+
+    @overload
+    async def get_messages(self, req: Optional[GetMessagesRequest] = None) -> List[Message]: ...
+
+    async def get_messages(self, req: Union[Optional[GetMessagesRequest], GetMessageByHashRequest] = None) -> Union[List[Message], Optional[Message]]:
         req = req if req is not None else GetMessagesRequest()
         resp = await self._async_get("messages", req.model_dump(exclude_none=True))
+        if isinstance(req, GetMessageByHashRequest):
+            if len(resp) == 0:
+                return None
+            assert len(resp) == 1, "The response should contain only one message"
+            return Message(**resp[0])
         return [Message(**r) for r in resp]
 
     async def get_nft_collections(self, req: Optional[GetNFTCollectionsRequest] = None) -> List[NFTCollection]:
@@ -240,10 +290,63 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         cur_time = start_time
 
         while True:
-            req = GetTransactionRequest(account=account, start_utime=cur_time, sort="asc", limit=20)
+            req = GetTransactionsRequest(account=account, start_utime=cur_time, sort="asc", limit=20)
             txs = await self.get_transactions(req)
             if len(txs) > 0:
                 for tx in txs:
                     yield tx
                 cur_time = txs[-1].now + 1
             await asyncio.sleep(interval_in_second)
+
+    async def get_trace_alternative(self, req: GetTransactionTraceRequest) -> TransactionTrace:
+        """
+        get_trace_alternatives takes a transaction hash as input and returns the transaction trace.
+
+        # Note
+        This is an alternative method to get the transaction trace. It is not recommended to use this method unless the
+        original method does not work. It is compatible with the original method, but it may not be as efficient as it.
+        """
+
+        # Trace source of the transaction
+        async def _trace_source(orig_tx: Transaction) -> Tuple[Transaction, Dict[str, Transaction]]:
+            """
+            Find the source of the transaction, and return all the transaction that we found.
+
+            Returns
+            -------
+            Tuple[Transaction, Dict[str, Transaction]]
+                The first element is the source transaction, and the second element is a dictionary of all the transactions
+                that we found.
+            """
+            current_tx = orig_tx
+            visited: Dict[str, Transaction] = {}
+            while current_tx.in_msg.source is not None:
+                visited[current_tx.in_msg.hash] = current_tx
+                candidates = await self.get_transaction_by_message(GetTransactionByMessageRequest(direction="out", msg_hash=current_tx.in_msg.hash))
+                assert len(candidates) == 1, f"Expecting to find one transaction by message hash {current_tx.in_msg.hash}, but found {len(candidates)}"
+                current_tx = candidates[0]
+                if current_tx.in_msg.source is None:
+                    break
+            return current_tx, visited
+
+        async def _dfs_trace(root: Transaction, visited: Dict[str, Transaction], trace_id: str) -> List[TransactionTrace]:
+            children = []
+            for out_msg in root.out_msgs:
+                exist = visited.get(out_msg.hash, None)
+                if exist is None:
+                    adj_txs = await self.get_transaction_by_message(GetTransactionByMessageRequest(msg_hash=out_msg.hash, direction="in"))
+                    assert len(adj_txs) == 1, f"Expecting to find one transaction by message hash {out_msg.hash}, but found {len(adj_txs)}"
+                    results = await _dfs_trace(adj_txs[0], visited, trace_id)
+                    child = TransactionTrace(id=trace_id, transaction=adj_txs[0], children=results)
+                    children.append(child)
+                else:
+                    results = await _dfs_trace(exist, visited, trace_id)
+                    child = TransactionTrace(id=trace_id, transaction=exist, children=results)
+                    children.append(child)
+            return children
+
+        orig_tx = await self.get_transactions(GetTransactionByHashRequest(hash=req.hash))
+        assert orig_tx is not None, f"The original transaction {req.hash} does not exist"
+        source_tx, visited = await _trace_source(orig_tx=orig_tx)
+        children = await _dfs_trace(source_tx, visited, source_tx.hash)
+        return TransactionTrace(id=source_tx.hash, transaction=source_tx, children=children)

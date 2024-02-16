@@ -1,15 +1,15 @@
-from typing import Literal, overload
+from typing import Literal, Optional, overload
 
 from pytoncenter.v2.api import AsyncTonCenterClientV2
 from pytoncenter.v3.api import AsyncTonCenterClientV3
 
 
 @overload
-def get_client(version: Literal["v2"], network: Literal["mainnet", "testnet"], *args, **kwargs) -> AsyncTonCenterClientV2: ...
+def get_client(version: Literal["v2"], network: Literal["mainnet", "testnet"], qps: Optional[float] = None, *args, **kwargs) -> AsyncTonCenterClientV2: ...
 
 
 @overload
-def get_client(version: Literal["v3"], network: Literal["mainnet", "testnet"], *args, **kwargs) -> AsyncTonCenterClientV3: ...
+def get_client(version: Literal["v3"], network: Literal["mainnet", "testnet"], qps: Optional[float] = None, *args, **kwargs) -> AsyncTonCenterClientV3: ...
 
 
 def get_client(version: Literal["v2", "v3"], network: Literal["mainnet", "testnet"], *args, **kwargs):

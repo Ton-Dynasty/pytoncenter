@@ -1,5 +1,6 @@
 from typing import Callable, Dict, Optional, Union
 
+from deprecated import deprecated
 from tonpy import CellSlice
 from treelib import Node, Tree
 
@@ -20,6 +21,7 @@ __all__ = [
 NamedFunction = Callable[[Address], Optional[str]]
 
 
+@deprecated(version="0.1.0", reason="truncate_middle is deprecated, use `pytoncenter.utils.truncate_address` instead")
 def truncate_middle(address: Address, prefix: int = 6, suffix: int = 6) -> str:
     """
     Truncate middle part of the address to make it more readable
@@ -28,6 +30,7 @@ def truncate_middle(address: Address, prefix: int = 6, suffix: int = 6) -> str:
     return addr[:prefix] + "..." + addr[-suffix:] if len(addr) > prefix + suffix else addr
 
 
+@deprecated(version="0.1.0", reason="default_named_func is deprecated, use `pytoncenter.utils.default_address_mapping` instead")
 def default_named_func(address: Address, **kwargs) -> Optional[str]:
     """
     Truncate middle part of the address to make it more readable
@@ -46,6 +49,7 @@ def default_named_func(address: Address, **kwargs) -> Optional[str]:
     return truncate_middle(address, prefix, suffix)
 
 
+@deprecated(version="0.1.0", reason="format_trace_tx is deprecated, use `pytoncenter.utils.format_tx` instead")
 def format_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = default_named_func) -> str:
     """
     Format transaction trace in a pretty way
@@ -69,6 +73,7 @@ def format_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = default_named
     )
 
 
+@deprecated(version="0.1.0", reason="create_named_mapping_func is deprecated, use `pytoncenter.utils.create_address_mapping` instead")
 def create_named_mapping_func(mapping: Dict[Address, str], truncate_address: bool = True) -> NamedFunction:
     """
     create a named function to map address to a more readable format
@@ -88,6 +93,7 @@ def create_named_mapping_func(mapping: Dict[Address, str], truncate_address: boo
     return namedFunction
 
 
+@deprecated(version="0.1.0", reason="pretty_print_trace_tx with client v2 is deprecated, use `pytoncenter.utils.format_trace` and client v3 instead")
 def pretty_print_trace_tx(trace_tx: TraceTx, named_func: NamedFunction = default_named_func):
     """
     print transaction trace in a pretty way

@@ -9,7 +9,7 @@ from .types import AddressLike, PyDatetime
 __all__ = [
     "GetBlockRequest",
     "GetMasterchainBlockShardsRequest",
-    "GetTransactionRequest",
+    "GetTransactionsRequest",
     "GetTransactionByMasterchainBlockRequest",
     "GetTransactionByMessageRequest",
     "GetAdjacentTransactionsRequest",
@@ -28,6 +28,9 @@ __all__ = [
     "GetWalletRequest",
     "GetSpecifiedJettonWalletRequest",
     "GetSpecifiedNFTItemRequest",
+    "GetMessageByHashRequest",
+    "GetTransactionByHashRequest",
+    "GetSourceTransactionRequest",
 ]
 
 
@@ -72,7 +75,11 @@ class GetMasterchainBlockShardsRequest(BaseModel):
     include_mc_block: bool = Field(False, description="Include masterchain block")
 
 
-class GetTransactionRequest(BaseModel):
+class GetTransactionByHashRequest(BaseModel):
+    hash: str = Field(description="Transaction hash. Acceptable in hex, base64 and base64url forms")
+
+
+class GetTransactionsRequest(BaseModel):
     workchain: Optional[int] = Field(default=None, description="Block workchain")
     shard: Optional[str] = Field(default=None, description="Block shard id. Must be sent with workchain")
     seqno: Optional[int] = Field(default=None, description="Block block seqno. Must be sent with workchain and shard")
@@ -126,6 +133,10 @@ class GetTransactionByMessageRequest(BaseModel):
     offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read.")
 
 
+class GetSourceTransactionRequest(BaseModel):
+    hash: str = Field(description="Transaction hash. Acceptable in hex, base64 and base64url forms")
+
+
 class GetAdjacentTransactionsRequest(BaseModel):
     hash: str = Field(description="Transaction hash. Acceptable in hex, base64 and base64url forms")
     direction: Literal["in", "out", "both"] = Field(default="both", description="Message direction")
@@ -149,6 +160,10 @@ class GetTracesRequest(BaseModel):
 class GetTransactionTraceRequest(BaseModel):
     hash: str = Field(description="Transaction hash. Acceptable in hex, base64 and base64url forms")
     sort: Literal["none", "asc", "desc"] = Field(default="asc", description="Sort transactions by lt")
+
+
+class GetMessageByHashRequest(BaseModel):
+    hash: str = Field(description="Message hash. Acceptable in hex, base64 and base64url forms")
 
 
 class GetMessagesRequest(BaseModel):
