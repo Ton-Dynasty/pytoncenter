@@ -306,26 +306,26 @@ class RunGetMethodResponse(BaseModel):
 class Message(BaseModel):
     hash: str = Field(..., title="Hash")
     source: Optional[str] = Field(..., title="Source")
-    source_friendly: Optional[str] = Field(..., title="Source Friendly")
+    source_friendly: Optional[AddressLike] = Field(..., title="Source Friendly")
     destination: Optional[str] = Field(..., title="Destination")
-    destination_friendly: Optional[str] = Field(..., title="Destination Friendly")
-    value: Optional[str] = Field(..., title="Value")
-    fwd_fee: Optional[str] = Field(..., title="Fwd Fee")
-    ihr_fee: Optional[str] = Field(..., title="Ihr Fee")
-    created_lt: Optional[str] = Field(..., title="Created Lt")
-    created_at: Optional[str] = Field(..., title="Created At")
+    destination_friendly: Optional[AddressLike] = Field(..., title="Destination Friendly")
+    value: Optional[int] = Field(..., title="Value")
+    fwd_fee: Optional[int] = Field(..., title="Fwd Fee")
+    ihr_fee: Optional[int] = Field(..., title="Ihr Fee")
+    created_lt: Optional[int] = Field(..., title="Created Lt")
+    created_at: Optional[int] = Field(..., title="Created At")
     opcode: Optional[str] = Field(..., title="Opcode")
     ihr_disabled: Optional[bool] = Field(..., title="Ihr Disabled")
     bounce: Optional[bool] = Field(..., title="Bounce")
     bounced: Optional[bool] = Field(..., title="Bounced")
-    import_fee: Optional[str] = Field(..., title="Import Fee")
+    import_fee: Optional[int] = Field(..., title="Import Fee")
     message_content: Optional[MessageContent]
     init_state: Optional[MessageInitState]
 
 
 class Transaction(BaseModel):
     account: AddressLike = Field(..., title="Account")
-    account_friendly: str = Field(..., title="Account Friendly")
+    account_friendly: AddressLike = Field(..., title="Account Friendly")
     hash: str = Field(..., title="Hash")
     lt: int = Field(..., title="Lt")
     now: int = Field(..., title="Now")
@@ -338,7 +338,7 @@ class Transaction(BaseModel):
     prev_trans_lt: int = Field(..., title="Prev Trans Lt")
     description: Any = Field(..., title="Description")
     block_ref: Optional[BlockReference]
-    in_msg: Optional[Message]
+    in_msg: Message = Field(..., title="In Msg")
     out_msgs: List[Message] = Field(..., title="Out Msgs")
     account_state_before: Optional[AccountState]
     account_state_after: Optional[AccountState]
@@ -348,7 +348,7 @@ class Transaction(BaseModel):
 class TransactionTrace(BaseModel):
     id: str = Field(..., title="Id")
     transaction: Transaction
-    children: List[TransactionTrace] = Field(..., title="Children")
+    children: List[TransactionTrace] = Field(default=[], title="Children")
 
 
 GetMethodParameterInput.model_rebuild()
