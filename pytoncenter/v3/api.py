@@ -335,7 +335,7 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         get_trace_alternatives takes a transaction hash as input and returns the transaction trace.
 
         # Note
-        This is an alternative method to get the transaction trace. It is not recommended to use this method unless the
+        This is an alternative method to get the transaction trace. It is not recommended to use this method in production unless the
         original method does not work. It is compatible with the original method, but it may not be as efficient as it.
         """
 
