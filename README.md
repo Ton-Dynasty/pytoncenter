@@ -281,10 +281,11 @@ Alan WalletV4R2 -> Jetton Master (Mint:1) [1.0 TON]
 2. [Decode Jetton Get Method Result](./examples/v3/decode_jetton_data.py)
 3. [Decode Custom Get Method Result](./examples/v3/decode_custom_data.py)
 4. [Multicall](./examples/v3/multicall.py)
-5. [Subscribe transactions for address](./examples/v3/subscribe_jetton_wallet.py)
+5. [Subscribe transactions of address](./examples/v3/subscribe_jetton_wallet.py)
 6. [Get Account Balance](./examples/v3/get_account_balance.py)
 7. [Get Previous Transaction](./examples/v3/get_prev_tx.py)
 8. [Get Next Transaction](./examples//v3/get_next_tx.py)
+9. [Wait message exists](./examples/v3//wait_message_exists.py)
 
 ## Examples (V2)
 1. [Get Transaction Traces](./examples/v2/transaction_trace.py)
