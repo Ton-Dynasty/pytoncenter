@@ -32,7 +32,7 @@ __all__ = [
     "GetTransactionByHashRequest",
     "GetSourceTransactionRequest",
     "SubscribeTransactionRequest",
-    "WaitTraceCompleteRequest",
+    "WaitMessageExistsRequest",
 ]
 
 
@@ -282,7 +282,7 @@ class SubscribeTransactionRequest(BaseModel):
     offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
 
 
-class WaitTraceCompleteRequest(BaseModel):
+class WaitMessageExistsRequest(BaseModel):
     msg_hash: str = Field(..., description="Message hash. Acceptable in hex, base64 and base64url forms")
     max_retry: Optional[int] = Field(default=None, description="Max retry times to check for new messages, None for infinite")
     interval: float = Field(default=2.0, description="Interval in seconds to check for new messages")

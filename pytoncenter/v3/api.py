@@ -271,23 +271,28 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         resp = await self._async_post("estimateFee", req.model_dump(exclude_none=True))
         return EstimateFeeResponse(**resp)
 
-    async def wait_trace_complete(self, req: WaitTraceCompleteRequest) -> TransactionTrace:
+    async def wait_message_exists(self, req: WaitMessageExistsRequest):
         """
-        wait_trace_complete wait until the whole transaction trace is complete and returns the transaction trace.
+        wait_message_exists wait until the whole transaction trace is complete and yields the transaction.
         This is useful after the external message is sent, and we want to use the message hash to get the transaction trace.
         """
         retry = req.max_retry
-        target: Optional[Transaction] = None
         while retry is None or retry > 0:
             retry = retry - 1 if retry is not None else None
             _timer_start = time.monotonic()
-            msgs = await self.get_transaction_by_message(
-                GetTransactionByMessageRequest(
-                    direction="in",
-                    msg_hash=req.msg_hash,
-                    limit=1,
+            try:
+                msgs = await self.get_transaction_by_message(
+                    GetTransactionByMessageRequest(
+                        direction="in",
+                        msg_hash=req.msg_hash,
+                        limit=1,
+                    )
                 )
-            )
+            except TonCenterException as e:
+                if e.code == 503:
+                    msgs = []
+                else:
+                    raise e
             _timer_end = time.monotonic()
             elapse = _timer_end - _timer_start
             sleep_time = max(0, req.interval - elapse)
@@ -295,13 +300,9 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
                 await asyncio.sleep(sleep_time)
                 continue
             assert len(msgs) == 1, f"Expecting to find one transaction by message hash {req.msg_hash}, but found {len(msgs)}"
-            target = msgs[0]
-            break
-
-        if target is None:
-            raise ValueError("The retry limit is reached, but the message is not found")
-
-        return await self.get_trace_alternative(GetTransactionTraceRequest(hash=target.hash))
+            yield msgs[0]
+            return
+        raise TonCenterException(429, "Reached the maximum retry limit")
 
     async def subscribe_tx(self, req: SubscribeTransactionRequest):
         """
