@@ -169,7 +169,7 @@ Jetton content - Image:  https://coinhere.io/wp-content/uploads/2020/08/Tether-U
 </details>
 
 <details>
-<summary>Example 3. Customization</summary>
+<summary>Example 3. Client Config Customization</summary>
 
 ```python
 # you can customize the qps by passing the qps parameter, default is 9.5 if api key is provided, otherwise 1
@@ -296,6 +296,10 @@ Alan WalletV4R2 -> Jetton Master (Mint:1) [1.0 TON]
 ## Examples (Address)
 1. [Address Parser](./examples/v2/address.py)
 
+## Usecase
+1. [Subscription and handle on event](https://github.com/Ton-Dynasty/ticton-python-sdk/blob/c30c80e89636ab63933332bc6cc7517ce6666c15/ticton/client.py#L682)
+2. [Custom Decoder With Singleton Pattern](https://github.com/Ton-Dynasty/ticton-python-sdk/blob/main/ticton/decoder.py)
+3. [Custom Message Payload Parser](https://github.com/Ton-Dynasty/ticton-python-sdk/blob/main/ticton/parser.py)
 
 ## Development Guide
 
