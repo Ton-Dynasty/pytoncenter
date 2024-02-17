@@ -31,6 +31,8 @@ __all__ = [
     "GetMessageByHashRequest",
     "GetTransactionByHashRequest",
     "GetSourceTransactionRequest",
+    "SubscribeTransactionRequest",
+    "WaitTraceCompleteRequest",
 ]
 
 
@@ -143,6 +145,7 @@ class GetAdjacentTransactionsRequest(BaseModel):
     limit: int = Field(default=128, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read.")
     offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read.")
     sort: Literal["asc", "desc", "none"] = Field(default="desc", description="Sort results by UTC timestamp")
+    full: bool = Field(default=False, description="Automatically paginate through the entire history of the transaction", exclude=True)
 
 
 class GetTracesRequest(BaseModel):
@@ -268,7 +271,21 @@ class JettonFilter(BaseModel):
         start_lt, end_lt = values.start_lt, values.end_lt
         if start_lt and end_lt and start_lt > end_lt:
             raise ValueError("\033[93mstart_lt must be earlier than end_lt\033[0m")
-        return values
+        return
+
+
+class SubscribeTransactionRequest(BaseModel):
+    account: AddressLike = Field(..., description="Account address. Must be sent in hex, base64 and base64url forms")
+    start_time: Optional[PyDatetime] = Field(default=None, description="Query transactions with generation UTC timestamp after given timestamp")
+    interval: float = Field(default=2.0, description="Interval in seconds to check for new transactions")
+    limit: int = Field(default=256, ge=1, le=256, description="Limit number of queried rows. Use with offset to batch read")
+    offset: int = Field(default=0, ge=0, description="Skip first N rows. Use with limit to batch read")
+
+
+class WaitTraceCompleteRequest(BaseModel):
+    msg_hash: str = Field(..., description="Message hash. Acceptable in hex, base64 and base64url forms")
+    max_retry: Optional[int] = Field(default=None, description="Max retry times to check for new messages, None for infinite")
+    interval: float = Field(default=2.0, description="Interval in seconds to check for new messages")
 
 
 class GetJettonTransfersRequest(JettonFilter): ...
