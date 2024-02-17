@@ -19,8 +19,8 @@ LOGGER = logging.getLogger(__name__)
 
 async def handle_jetton_internal_transfer(body: CellSlice, tx: Transaction, labeler: NamedFunction):
     msg = JettonMessage.InternalTransfer.parse(body)
-    src = labeler(Address(tx.in_msg.source))
-    dst = labeler(Address(tx.in_msg.destination))
+    src = labeler(Address(tx.in_msg.source))  # type: ignore
+    dst = labeler(Address(tx.in_msg.destination))  # type: ignore
     forward_ton = round(float(msg.forward_ton_amount) / 1e9, 4)
     if tx.in_msg.init_state is not None:
         return
@@ -31,8 +31,8 @@ async def handle_jetton_internal_transfer(body: CellSlice, tx: Transaction, labe
 async def handle_jetton_transfer(body: CellSlice, tx: Transaction, labeler: NamedFunction):
     msg = JettonMessage.Transfer.parse(body)
     jetton_amount = round(float(msg.amount) / 1e6, 4)
-    value = round(float(tx.in_msg.value) / 1e9, 4)
-    src = labeler(Address(tx.in_msg.source))
+    value = round(float(tx.in_msg.value) / 1e9, 4)  # type: ignore
+    src = labeler(Address(tx.in_msg.source))  # type: ignore
     dst = labeler(msg.destination)
     LOGGER.info(f"[{msg.OPCODE}] Jetton Transfer | {src} -> {dst} | {jetton_amount} USDT, {value} TON")
 
@@ -40,7 +40,7 @@ async def handle_jetton_transfer(body: CellSlice, tx: Transaction, labeler: Name
 async def handle_jetton_burn(body: CellSlice, tx: Transaction, labeler: NamedFunction):
     msg = JettonMessage.Burn.parse(body)
     burn_amount = round(float(msg.amount) / 1e6, 4)
-    src = labeler(Address(tx.in_msg.source))
+    src = labeler(Address(tx.in_msg.source))  # type: ignore
     LOGGER.info(f"[{msg.OPCODE}] Jetton Burn | 🔥 {src} burn {burn_amount} USDT 🔥")
 
 
@@ -67,15 +67,22 @@ async def main():
     )
 
     # Subscribe to transactions of a jetton wallet
-    async for tx in client.subscribe_tx("kQB8L_gn_thGqHLcn8ext98l6efykyB6z4yLCe9vtlrFrX-9", interval_in_second=1):
+    async for tx in client.subscribe_tx(
+        SubscribeTransactionRequest(
+            account="kQB8L_gn_thGqHLcn8ext98l6efykyB6z4yLCe9vtlrFrX-9",
+            start_time=None,
+            limit=10,
+            interval=1,
+        )
+    ):
         if tx.in_msg is None:
             continue
 
         LOGGER.info(f"Transaction: {tx.hash} { datetime.fromtimestamp(tx.now)}")
         try:
             # get sender and receiver, sender is from external if it's an empty string
-            sender = Address(tx.in_msg.source) if tx.in_msg.source is not None else "External"
-            receiver = Address(tx.in_msg.destination) if tx.in_msg.destination is not None else "Unkwnon"
+            sender = labeler(Address(tx.in_msg.source)) if tx.in_msg.source is not None else "External"
+            receiver = labeler(Address(tx.in_msg.destination)) if tx.in_msg.destination is not None else "Unkwnon"
 
             # get TON amount
             value = float(tx.in_msg.value or 0) / 1e9
@@ -90,9 +97,7 @@ async def main():
                     comment = tx.in_msg.message_content.decoded.comment
                 else:
                     comment = tx.in_msg.message_content.decoded.hex_comment
-                src = labeler(sender)
-                dst = labeler(receiver)
-                LOGGER.info(f"{src} sends {dst} {value} TON to {receiver} with comment {comment}")
+                LOGGER.info(f"{sender} sends {receiver} {value} TON with comment {comment}")
                 continue
 
             # normal message with cell data
