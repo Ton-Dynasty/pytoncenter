@@ -320,33 +320,28 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
             """
             current_tx = orig_tx
             visited: Dict[str, Transaction] = {}
+            visited[current_tx.hash] = current_tx
             while current_tx.in_msg.source is not None:
-                visited[current_tx.in_msg.hash] = current_tx
-                candidates = await self.get_transaction_by_message(GetTransactionByMessageRequest(direction="out", msg_hash=current_tx.in_msg.hash))
+                candidates = await self.get_adjacent_transactions(
+                    GetAdjacentTransactionsRequest(
+                        hash=current_tx.hash,
+                        direction="in",
+                        limit=1,
+                    )
+                )
                 assert len(candidates) == 1, f"Expecting to find one transaction by message hash {current_tx.in_msg.hash}, but found {len(candidates)}"
-                current_tx = candidates[0]
-                if current_tx.in_msg.source is None:
-                    break
+                prev_tx = candidates[0]
+                visited[prev_tx.hash] = current_tx
+                current_tx = prev_tx
             return current_tx, visited
 
-        async def _dfs_trace(root: Transaction, visited: Dict[str, Transaction], trace_id: str) -> List[TransactionTrace]:
-            children = []
-            for out_msg in root.out_msgs:
-                exist = visited.get(out_msg.hash, None)
-                if exist is None:
-                    adj_txs = await self.get_transaction_by_message(GetTransactionByMessageRequest(msg_hash=out_msg.hash, direction="in"))
-                    assert len(adj_txs) == 1, f"Expecting to find one transaction by message hash {out_msg.hash}, but found {len(adj_txs)}"
-                    results = await _dfs_trace(adj_txs[0], visited, trace_id)
-                    child = TransactionTrace(id=trace_id, transaction=adj_txs[0], children=results)
-                    children.append(child)
-                else:
-                    results = await _dfs_trace(exist, visited, trace_id)
-                    child = TransactionTrace(id=trace_id, transaction=exist, children=results)
-                    children.append(child)
-            return children
+        async def _dfs_trace(root: Transaction, trace_id: str) -> List[TransactionTrace]:
+            next_txs = await self.get_adjacent_transactions(GetAdjacentTransactionsRequest(hash=root.hash, direction="out", limit=256, sort=req.sort))
+            results = await self.multicall([_dfs_trace(tx, trace_id) for tx in next_txs])
+            return [TransactionTrace(id=tx.hash, transaction=tx, children=results[i]) for i, tx in enumerate(next_txs)]
 
         orig_tx = await self.get_transactions(GetTransactionByHashRequest(hash=req.hash))
         assert orig_tx is not None, f"The original transaction {req.hash} does not exist"
-        source_tx, visited = await _trace_source(orig_tx=orig_tx)
-        children = await _dfs_trace(source_tx, visited, source_tx.hash)
+        source_tx, _ = await _trace_source(orig_tx=orig_tx)
+        children = await _dfs_trace(source_tx, source_tx.hash)
         return TransactionTrace(id=source_tx.hash, transaction=source_tx, children=children)

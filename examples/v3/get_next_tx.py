@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 from pytoncenter import get_client
 from pytoncenter.v3.models import *
@@ -14,13 +15,34 @@ The output transactions should be:
 
 
 async def main():
+
     client = get_client(version="v3", network="testnet")
+
+    print("==============Reommanded way (Fast)=====================")
+
+    start = time.monotonic()
+    txs = await client.get_adjacent_transactions(
+        GetAdjacentTransactionsRequest(
+            hash="84b7c9467a0a24e7a59a5e224e9ef8803563621f4710fe8536ae7803fe245d61",
+            direction="out",
+        )
+    )
+    for _tx in txs:
+        print("Out Msg Hash", _tx.in_msg.hash, " -> Transaction hash", _tx.hash)
+    end = time.monotonic()
+    print("Time elapsed:", end - start)
+
+    print("==============Alternative way (Slow)=====================")
+
+    start = time.monotonic()
     tx = await client.get_transactions(GetTransactionByHashRequest(hash="84b7c9467a0a24e7a59a5e224e9ef8803563621f4710fe8536ae7803fe245d61"))
     assert tx is not None
     for out_msg in tx.out_msgs:
         txs = await client.get_transaction_by_message(GetTransactionByMessageRequest(direction="in", msg_hash=out_msg.hash))
         for _tx in txs:
             print("Out Msg Hash", out_msg.hash, " -> Transaction hash", _tx.hash)
+    end = time.monotonic()
+    print("Time elapsed:", end - start)
 
 
 if __name__ == "__main__":
