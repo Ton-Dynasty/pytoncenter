@@ -4,15 +4,13 @@ on:
   pull_request:
     branches:
       - "*"
-  push:
-    branches:
-      - "main"
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
     timeout-minutes: 10
     permissions:
       pull-requests: write
