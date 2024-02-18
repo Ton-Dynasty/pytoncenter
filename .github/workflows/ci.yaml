@@ -67,7 +67,7 @@ jobs:
         env:
           TONCENTER_API_KEY: ${{ secrets.TONCENTER_API_KEY }}
         run: |
-          poetry run pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=pytoncenter tests/v2/** tests/v3/** tests/extension/** | tee pytest-coverage.txt
+          poetry run pytest --junitxml=pytest.xml --cov-report=xml:coverage.xml --cov-report=term-missing:skip-covered --cov=pytoncenter tests/v2/** tests/v3/** tests/extension/** | tee pytest-coverage.txt
       #----------------------------------------------
       #              run coverage
       #----------------------------------------------
@@ -84,5 +84,5 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: unittests
           env_vars: OS,PYTHON
-          files: ./pytest.xml
+          files: ./coverage.xml
           verbose: true
