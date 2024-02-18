@@ -1,8 +1,8 @@
 import asyncio
 import os
+import time
 import warnings
-from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union, overload
+from typing import Any, Dict, List, Literal, Optional, Union, overload
 
 import aiohttp
 
@@ -130,25 +130,23 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         resp = await self._async_get("transactionsByMessage", req.model_dump(exclude_none=True))
         return [Transaction(**r) for r in resp]
 
-    @overload
-    async def get_adjacent_transactions(self, req: GetAdjacentTransactionsRequest) -> List[Transaction]: ...
-
-    @overload
-    async def get_adjacent_transactions(self, req: GetSourceTransactionRequest) -> Optional[Transaction]: ...
-
-    async def get_adjacent_transactions(self, req: Union[GetAdjacentTransactionsRequest, GetSourceTransactionRequest]) -> Union[List[Transaction], Optional[Transaction]]:
-        is_single_source = isinstance(req, GetSourceTransactionRequest)
-        req = GetAdjacentTransactionsRequest(hash=req.hash, direction="in", limit=1) if is_single_source else req
+    async def get_adjacent_transactions(self, req: GetAdjacentTransactionsRequest) -> List[Transaction]:
         try:
-            resp = await self._async_get("adjacentTransactions", req.model_dump(exclude_none=True))
-            if is_single_source:
-                assert len(resp) == 1, "The response should contain one transaction"
-                return Transaction(**resp[0])
-            else:
+            if req.full is False:
+                resp = await self._async_get("adjacentTransactions", req.model_dump(exclude_none=True))
                 return [Transaction(**r) for r in resp]
+            else:
+                results = []
+                while True:
+                    resp = await self._async_get("adjacentTransactions", req.model_dump(exclude_none=True))
+                    results.extend([Transaction(**r) for r in resp])
+                    if len(resp) < req.limit:
+                        break
+                    req.offset += req.limit
+                return results
         except TonCenterException as e:
             if e.code == 404:
-                return None if is_single_source else []
+                return []
             raise e
 
     async def get_transaction_trace(self, req: GetTransactionTraceRequest) -> List[TransactionTrace]:
@@ -273,54 +271,86 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         resp = await self._async_post("estimateFee", req.model_dump(exclude_none=True))
         return EstimateFeeResponse(**resp)
 
-    async def subscribe_tx(self, account: str, start_time: Optional[datetime] = None, interval_in_second: float = 2):
+    async def wait_message_exists(self, req: WaitMessageExistsRequest):
+        """
+        wait_message_exists wait until the whole transaction trace is complete and yields the transaction.
+        This is useful after the external message is sent, and we want to use the message hash to get the transaction trace.
+        """
+        retry = req.max_retry
+        while retry is None or retry > 0:
+            retry = retry - 1 if retry is not None else None
+            _timer_start = time.monotonic()
+            try:
+                msgs = await self.get_transaction_by_message(
+                    GetTransactionByMessageRequest(
+                        direction="in",
+                        msg_hash=req.msg_hash,
+                        limit=1,
+                    )
+                )
+            except TonCenterException as e:
+                if e.code == 503:
+                    msgs = []
+                else:
+                    raise e
+            _timer_end = time.monotonic()
+            elapse = _timer_end - _timer_start
+            sleep_time = max(0, req.interval - elapse)
+            if len(msgs) == 0:
+                await asyncio.sleep(sleep_time)
+                continue
+            assert len(msgs) == 1, f"Expecting to find one transaction by message hash {req.msg_hash}, but found {len(msgs)}"
+            yield msgs[0]
+            return
+        raise TonCenterException(429, "Reached the maximum retry limit")
+
+    async def subscribe_tx(self, req: SubscribeTransactionRequest):
         """
         subscribe_tx subscribes to transactions of a wallet and yields the transactions as they come.
-
-        Parameters
-        ----------
-        account: str
-            The account (address) to subscribe, the account can be any_from of address
-        start_time: datetime.datetime
-            The start time to crawl data.
-        interval_in_second: float
-            Interval between every batch of requests, in second.
         """
         warnings.warn("\033[93mThe `subscribe_tx` function is currently under development; please use it with caution.\033[0m", UserWarning)
-        cur_time = start_time
 
         while True:
-            req = GetTransactionsRequest(account=account, start_utime=cur_time, sort="asc", limit=20)
-            txs = await self.get_transactions(req)
+            _timer_start = time.monotonic()
+            txs = await self.get_transactions(
+                GetTransactionsRequest(
+                    account=req.account,
+                    start_utime=req.start_time,
+                    sort="asc",
+                    limit=req.limit,
+                    offset=req.offset,
+                )
+            )
+            req.offset += len(txs)
             if len(txs) > 0:
                 for tx in txs:
                     yield tx
-                cur_time = txs[-1].now + 1
-            await asyncio.sleep(interval_in_second)
+            _timer_end = time.monotonic()
+            elapse = _timer_end - _timer_start
+            sleep_time = max(0, req.interval - elapse)
+            await asyncio.sleep(sleep_time)
 
     async def get_trace_alternative(self, req: GetTransactionTraceRequest) -> TransactionTrace:
         """
         get_trace_alternatives takes a transaction hash as input and returns the transaction trace.
 
         # Note
-        This is an alternative method to get the transaction trace. It is not recommended to use this method unless the
+        This is an alternative method to get the transaction trace. It is not recommended to use this method in production unless the
         original method does not work. It is compatible with the original method, but it may not be as efficient as it.
         """
 
         # Trace source of the transaction
-        async def _trace_source(orig_tx: Transaction) -> Tuple[Transaction, Dict[str, Transaction]]:
+        async def _trace_source(orig_tx: Transaction) -> Transaction:
             """
             Find the source of the transaction, and return all the transaction that we found.
+            External message are always the source of the transaction.
 
             Returns
             -------
-            Tuple[Transaction, Dict[str, Transaction]]
-                The first element is the source transaction, and the second element is a dictionary of all the transactions
-                that we found.
+            Transaction
+                The source transaction
             """
             current_tx = orig_tx
-            visited: Dict[str, Transaction] = {}
-            visited[current_tx.hash] = current_tx
             while current_tx.in_msg.source is not None:
                 candidates = await self.get_adjacent_transactions(
                     GetAdjacentTransactionsRequest(
@@ -331,17 +361,16 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
                 )
                 assert len(candidates) == 1, f"Expecting to find one transaction by message hash {current_tx.in_msg.hash}, but found {len(candidates)}"
                 prev_tx = candidates[0]
-                visited[prev_tx.hash] = current_tx
                 current_tx = prev_tx
-            return current_tx, visited
+            return current_tx
 
         async def _dfs_trace(root: Transaction, trace_id: str) -> List[TransactionTrace]:
-            next_txs = await self.get_adjacent_transactions(GetAdjacentTransactionsRequest(hash=root.hash, direction="out", limit=256, sort=req.sort))
+            next_txs = await self.get_adjacent_transactions(GetAdjacentTransactionsRequest(hash=root.hash, direction="out", limit=256, sort=req.sort, full=True))
             results = await self.multicall([_dfs_trace(tx, trace_id) for tx in next_txs])
             return [TransactionTrace(id=tx.hash, transaction=tx, children=results[i]) for i, tx in enumerate(next_txs)]
 
         orig_tx = await self.get_transactions(GetTransactionByHashRequest(hash=req.hash))
         assert orig_tx is not None, f"The original transaction {req.hash} does not exist"
-        source_tx, _ = await _trace_source(orig_tx=orig_tx)
+        source_tx = await _trace_source(orig_tx=orig_tx)
         children = await _dfs_trace(source_tx, source_tx.hash)
         return TransactionTrace(id=source_tx.hash, transaction=source_tx, children=children)

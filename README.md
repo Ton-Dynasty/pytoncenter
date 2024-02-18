@@ -169,7 +169,7 @@ Jetton content - Image:  https://coinhere.io/wp-content/uploads/2020/08/Tether-U
 </details>
 
 <details>
-<summary>Example 3. Customization</summary>
+<summary>Example 3. Client Config Customization</summary>
 
 ```python
 # you can customize the qps by passing the qps parameter, default is 9.5 if api key is provided, otherwise 1
@@ -231,60 +231,17 @@ Sample output:
 
 </details>
 
-<details>
-<summary>Example 5. Obtain Transaction trace (API V2)</summary>
-
-The following example demonstrates how to obtain the transaction trace for a specified transaction. This transaction is associated with a contract deployed using the [TON Dynasty Contract Jetton Template](https://github.com/Ton-Dynasty/tondynasty-contracts/blob/main/contracts/jetton_example.tact).
-
-- Contract Address on [Testnet TON Viewer](https://testnet.tonviewer.com/kQAreQ23eabjRO5glLCbhZ4KxQ9SOIjtw2eM2PuEXXhIZeh3)
-- JettonMint Message Transaction on [Testnet TON Viewer](https://testnet.tonviewer.com/transaction/0f8d6b47a00d4914cb447b34cbce42e9e40c1d188e99ab76f56b0685b3532365)
-
-```python
-from pytoncenter import get_client
-from pytoncenter.v2.tools import pretty_print_trace_tx, create_named_mapping_func
-from pytoncenter.address import Address
-import asyncio
-import json
-
-async def main():
-    # Initialize the client and query a transaction
-    client = get_client(version="v2", network="testnet")
-    txs = await client.get_transactions(address="kQAreQ23eabjRO5glLCbhZ4KxQ9SOIjtw2eM2PuEXXhIZeh3", hash="Lomkyzxh1WBkxvxZ3cJNS2bAYIPC7dPZA67wDomGM4U=", limit=1)
-    tx = txs[0]
-    result = await client.trace_tx(tx)
-    # Pretty print the transaction trace with name mapping for addresses
-    named_func = create_named_mapping_func(
-        {
-            Address("EQC8zFHM8LCMp9Xs--w3g9wmf7RwuDgJcQtV-oHZRSCqQZ__"): "Alan WalletV4R2",
-            Address("0:2b790db779a6e344ee6094b09b859e0ac50f523888edc3678cd8fb845d784865"): "Jetton Master",
-            Address("kQC40ScRg9_1ob5sjWsdScltrCGu0HARsUnOYQ1esc12588C"): "Jetton Wallet",
-        },
-        truncate_address=True,
-    )
-    pretty_print_trace_tx(result, named_func=named_func)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-You may get the following output in the console:
-
-```bash
-Alan WalletV4R2 -> Jetton Master (Mint:1) [1.0 TON]
-└── Jetton Master -> Jetton Wallet (0x178d4519) [0.955002 TON]
-    └── Jetton Wallet -> Alan WalletV4R2 (0xd53276db) [0.853806 TON]
-```
-</details>
 
 ## Examples (V3)
 1. [Get Transaction Traces](./examples/v3//get_tx_trace.py)
 2. [Decode Jetton Get Method Result](./examples/v3/decode_jetton_data.py)
 3. [Decode Custom Get Method Result](./examples/v3/decode_custom_data.py)
 4. [Multicall](./examples/v3/multicall.py)
-5. [Subscribe transactions for address](./examples/v3/subscribe_jetton_wallet.py)
+5. [Subscribe transactions of address](./examples/v3/subscribe_jetton_wallet.py)
 6. [Get Account Balance](./examples/v3/get_account_balance.py)
 7. [Get Previous Transaction](./examples/v3/get_prev_tx.py)
 8. [Get Next Transaction](./examples//v3/get_next_tx.py)
+9. [Wait message exists](./examples/v3//wait_message_exists.py)
 
 ## Examples (V2)
 1. [Get Transaction Traces](./examples/v2/transaction_trace.py)
@@ -296,6 +253,10 @@ Alan WalletV4R2 -> Jetton Master (Mint:1) [1.0 TON]
 ## Examples (Address)
 1. [Address Parser](./examples/v2/address.py)
 
+## Usecase
+1. [Subscription and handle on event](https://github.com/Ton-Dynasty/ticton-python-sdk/blob/c30c80e89636ab63933332bc6cc7517ce6666c15/ticton/client.py#L682)
+2. [Custom Decoder With Singleton Pattern](https://github.com/Ton-Dynasty/ticton-python-sdk/blob/main/ticton/decoder.py)
+3. [Custom Message Payload Parser](https://github.com/Ton-Dynasty/ticton-python-sdk/blob/main/ticton/parser.py)
 
 ## Development Guide
 
