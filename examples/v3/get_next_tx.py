@@ -21,7 +21,7 @@ async def main():
     print("==============Reommanded way (Fast)=====================")
 
     start = time.monotonic()
-    txs = await client.get_adjacent_transactions(
+    txs, _ = await client.get_adjacent_transactions(
         GetAdjacentTransactionsRequest(
             hash="84b7c9467a0a24e7a59a5e224e9ef8803563621f4710fe8536ae7803fe245d61",
             direction="out",
@@ -35,10 +35,10 @@ async def main():
     print("==============Alternative way (Slow)=====================")
 
     start = time.monotonic()
-    tx = await client.get_transactions(GetTransactionByHashRequest(hash="84b7c9467a0a24e7a59a5e224e9ef8803563621f4710fe8536ae7803fe245d61"))
+    tx, _ = await client.get_transactions(GetTransactionByHashRequest(hash="84b7c9467a0a24e7a59a5e224e9ef8803563621f4710fe8536ae7803fe245d61"))
     assert tx is not None
     for out_msg in tx.out_msgs:
-        txs = await client.get_transaction_by_message(GetTransactionByMessageRequest(direction="in", msg_hash=out_msg.hash))
+        txs, _ = await client.get_transaction_by_message(GetTransactionByMessageRequest(direction="in", msg_hash=out_msg.hash))
         for _tx in txs:
             print("Out Msg Hash", out_msg.hash, " -> Transaction hash", _tx.hash)
     end = time.monotonic()

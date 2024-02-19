@@ -2,7 +2,7 @@ import asyncio
 import os
 import time
 import warnings
-from typing import Any, Dict, List, Literal, Optional, Union, overload
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union, overload
 
 import aiohttp
 
@@ -53,7 +53,7 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
             headers["X-API-KEY"] = self.api_key
         return headers
 
-    async def _parse_response(self, response: aiohttp.ClientResponse):
+    async def _parse_response(self, response: aiohttp.ClientResponse) -> Dict[str, Any]:
         """
         _parse_response parses the response from TonCenter API and returns the result if the request was successful.
         If the request was unsuccessful, a TonException is raised.
@@ -95,63 +95,84 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         return await self._underlying_call("POST", url, payload=payload)
 
     async def get_masterchain_info(self) -> MasterchainInfo:
-        return await self._async_get("masterchainInfo")
+        resp = await self._async_get("masterchainInfo")
+        return MasterchainInfo(**resp)
 
     async def get_blocks(self, req: Optional[GetBlockRequest] = None) -> List[Block]:
         req = req if req is not None else GetBlockRequest()
         resp = await self._async_get("blocks", req.model_dump(exclude_none=True))
-        return [Block(**r) for r in resp]
+        blk_list = BlockList(**resp)
+        return blk_list.blocks
 
     async def get_masterchain_block_shards(self, req: GetMasterchainBlockShardsRequest) -> List[Block]:
         resp = await self._async_get("masterchainBlockShards", req.model_dump(exclude_none=True))
-        return [Block(**r) for r in resp]
+        blk_list = BlockList(**resp)
+        return blk_list.blocks
+
+    async def get_masterchain_block_shard_state(self, req: GetMasterchainBlockShardStateRequest) -> List[Block]:
+        resp = await self._async_get("masterchainBlockShardState", req.model_dump(exclude_none=True))
+        b = BlockList(**resp)
+        return b.blocks
+
+    async def get_address_book(self, req: GetAddressBookRequest) -> Dict[str, AddressBookEntry]:
+        """
+        get_address_book returns the mapping for original address to user friendly format
+        """
+        resp = await self._async_get("addressBook", req.model_dump(exclude_none=True))
+        addr_book = AddressBook(data=resp)
+        return addr_book.data
 
     @overload
-    async def get_transactions(self, req: Optional[GetTransactionByHashRequest]) -> Optional[Transaction]: ...
+    async def get_transactions(self, req: Optional[GetTransactionByHashRequest]) -> Union[Tuple[None, None], Tuple[Transaction, Dict[str, AddressBookEntry]]]: ...
 
     @overload
-    async def get_transactions(self, req: Optional[GetTransactionsRequest]) -> List[Transaction]: ...
+    async def get_transactions(self, req: Optional[GetTransactionsRequest]) -> Tuple[List[Transaction], Dict[str, AddressBookEntry]]: ...
 
-    async def get_transactions(self, req: Union[Optional[GetTransactionsRequest], GetTransactionByHashRequest] = None) -> Union[List[Transaction], Optional[Transaction]]:
+    async def get_transactions(
+        self, req: Union[Optional[GetTransactionsRequest], GetTransactionByHashRequest] = None
+    ) -> Union[Tuple[None, None], Tuple[Transaction, Dict[str, AddressBookEntry]], Tuple[List[Transaction], Dict[str, AddressBookEntry]]]:
         req = req or GetTransactionsRequest()
         resp = await self._async_get("transactions", req.model_dump(exclude_none=True))
+        tx_list = TransactionList(**resp)
         if isinstance(req, GetTransactionByHashRequest):
-            if len(resp) == 0:
-                return None
-            assert len(resp) == 1, "The response should contain only one transaction"
-            return Transaction(**resp[0])
-        return [Transaction(**r) for r in resp]
+            if len(tx_list.transactions) == 0:
+                return None, None
+            assert len(tx_list.transactions) == 1, "The response should contain only one transaction"
+            return tx_list.transactions[0], tx_list.address_book
+        return tx_list.transactions, tx_list.address_book
 
-    async def get_transactions_by_masterchain_block(self, req: GetTransactionByMasterchainBlockRequest) -> List[Transaction]:
+    async def get_transactions_by_masterchain_block(self, req: GetTransactionByMasterchainBlockRequest) -> Tuple[List[Transaction], Dict[str, AddressBookEntry]]:
         resp = await self._async_get("transactionsByMasterchainBlock", req.model_dump(exclude_none=True))
-        return [Transaction(**r) for r in resp]
+        tx_list = TransactionList(**resp)
+        return tx_list.transactions, tx_list.address_book
 
-    async def get_transaction_by_message(self, req: GetTransactionByMessageRequest) -> List[Transaction]:
+    async def get_transaction_by_message(self, req: GetTransactionByMessageRequest) -> Tuple[List[Transaction], Dict[str, AddressBookEntry]]:
         resp = await self._async_get("transactionsByMessage", req.model_dump(exclude_none=True))
-        return [Transaction(**r) for r in resp]
+        tx_list = TransactionList(**resp)
+        return tx_list.transactions, tx_list.address_book
 
-    async def get_adjacent_transactions(self, req: GetAdjacentTransactionsRequest) -> List[Transaction]:
+    async def get_adjacent_transactions(self, req: GetAdjacentTransactionsRequest) -> Tuple[List[Transaction], Dict[str, AddressBookEntry]]:
         try:
             if req.full is False:
                 resp = await self._async_get("adjacentTransactions", req.model_dump(exclude_none=True))
-                return [Transaction(**r) for r in resp]
+                tx_list = TransactionList(**resp)
+                return tx_list.transactions, tx_list.address_book
             else:
-                results = []
+                address_book = dict()
+                transactions = []
                 while True:
                     resp = await self._async_get("adjacentTransactions", req.model_dump(exclude_none=True))
-                    results.extend([Transaction(**r) for r in resp])
-                    if len(resp) < req.limit:
+                    txs = TransactionList(**resp)
+                    transactions.extend(txs.transactions)
+                    address_book.update(txs.address_book)
+                    if len(txs.transactions) < req.limit:
                         break
                     req.offset += req.limit
-                return results
+                return transactions, address_book
         except TonCenterException as e:
             if e.code == 404:
-                return []
+                return [], {}
             raise e
-
-    async def get_transaction_trace(self, req: GetTransactionTraceRequest) -> List[TransactionTrace]:
-        resp = await self._async_get("traces", req.model_dump(exclude_none=True))
-        return [TransactionTrace(**r) for r in resp]
 
     @overload
     async def get_messages(self, req: GetMessageByHashRequest) -> Optional[Message]: ...
@@ -162,17 +183,19 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
     async def get_messages(self, req: Union[Optional[GetMessagesRequest], GetMessageByHashRequest] = None) -> Union[List[Message], Optional[Message]]:
         req = req if req is not None else GetMessagesRequest()
         resp = await self._async_get("messages", req.model_dump(exclude_none=True))
+        msg_list = MessageList(**resp)
         if isinstance(req, GetMessageByHashRequest):
-            if len(resp) == 0:
+            if len(msg_list.messages) == 0:
                 return None
-            assert len(resp) == 1, "The response should contain only one message"
-            return Message(**resp[0])
-        return [Message(**r) for r in resp]
+            assert len(msg_list.messages) == 1, "The response should contain only one message"
+            return msg_list.messages[0]
+        return msg_list.messages
 
     async def get_nft_collections(self, req: Optional[GetNFTCollectionsRequest] = None) -> List[NFTCollection]:
         req = req if req is not None else GetNFTCollectionsRequest()
         resp = await self._async_get("nft/collections", req.model_dump(exclude_none=True))
-        return [NFTCollection(**r) for r in resp]
+        collections = NFTCollectionList(**resp)
+        return collections.nft_collections
 
     @overload
     async def get_nft_items(self, req: Optional[GetNFTItemsRequest] = None) -> List[NFTItem]: ...
@@ -183,17 +206,19 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
     async def get_nft_items(self, req: Optional[Union[GetNFTItemsRequest, GetSpecifiedNFTItemRequest]] = None) -> Union[List[NFTItem], Optional[NFTItem]]:
         req = req if req is not None else GetNFTItemsRequest()
         resp = await self._async_get("nft/items", req.model_dump(exclude_none=True))
+        items = NFTItemList(**resp)
         if isinstance(req, GetSpecifiedNFTItemRequest):
-            if len(resp) == 0:
+            if len(items.nft_items) == 0:
                 return None
-            assert len(resp) == 1, "The response should contain only one item"
-            return NFTItem(**resp[0])
-        return [NFTItem(**r) for r in resp]
+            assert len(items.nft_items) == 1, "The response should contain only one item"
+            return items.nft_items[0]
+        return items.nft_items
 
     async def get_nft_transfers(self, req: Optional[GetNFTTransfersRequest] = None) -> List[NFTTransfer]:
         req = req if req is not None else GetNFTTransfersRequest()
         resp = await self._async_get("nft/transfers", req.model_dump(exclude_none=True))
-        return [NFTTransfer(**r) for r in resp]
+        transfers = NFTTransferList(**resp)
+        return transfers.nft_transfers
 
     @overload
     async def get_jetton_masters(self, req: Optional[GetJettonMastersRequest] = None) -> List[JettonMaster]:
@@ -213,12 +238,13 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         if is_address:
             req = GetJettonMastersRequest(address=req)
         resp = await self._async_get("jetton/masters", req.model_dump(exclude_none=True))
+        masters = JettonMasterList(**resp)
         if is_address:
-            if len(resp) == 0:
+            if len(masters.jetton_masters) == 0:
                 return None
-            assert len(resp) == 1, "The response should contain only one master"
-            return JettonMaster(**resp[0])
-        return [JettonMaster(**r) for r in resp]
+            assert len(masters.jetton_masters) == 1, "The response should contain only one master"
+            return masters.jetton_masters[0]
+        return masters.jetton_masters
 
     @overload
     async def get_jetton_wallets(self, req: Optional[GetJettonWalletsRequest] = None) -> List[JettonWallet]: ...
@@ -229,27 +255,25 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
     async def get_jetton_wallets(self, req: Optional[Union[GetJettonWalletsRequest, GetSpecifiedJettonWalletRequest]] = None) -> Union[List[JettonWallet], Optional[JettonWallet]]:
         req = req if req is not None else GetJettonWalletsRequest()
         resp = await self._async_get("jetton/wallets", req.model_dump(exclude_none=True))
+        wallets = JettonWalletList(**resp)
         if isinstance(req, GetSpecifiedJettonWalletRequest):
-            if len(resp) == 0:
+            if len(wallets.jetton_wallets) == 0:
                 return None
-            assert len(resp) == 1, "The response should contain only one wallet"
-            return JettonWallet(**resp[0])
-        return [JettonWallet(**r) for r in resp]
+            assert len(wallets.jetton_wallets) == 1, "The response should contain only one wallet"
+            return wallets.jetton_wallets[0]
+        return wallets.jetton_wallets
 
     async def get_jetton_transfers(self, req: Optional[GetJettonTransfersRequest] = None) -> List[JettonTransfer]:
         req = req if req is not None else GetJettonTransfersRequest()
         resp = await self._async_get("jetton/transfers", req.model_dump(exclude_none=True))
-        return [JettonTransfer(**r) for r in resp]
+        txfer = JettonTransferList(**resp)
+        return txfer.jetton_transfers
 
     async def get_jetton_burns(self, req: Optional[GetJettonBurnsRequest] = None) -> List[JettonBurn]:
         req = req if req is not None else GetJettonBurnsRequest()
         resp = await self._async_get("jetton/burns", req.model_dump(exclude_none=True))
-        return [JettonBurn(**r) for r in resp]
-
-    async def get_top_accounts_by_balance(self, req: Optional[GetTopAccountsByBalanceRequest] = None) -> List[AccountBalance]:
-        req = req if req is not None else GetTopAccountsByBalanceRequest()
-        resp = await self._async_get("topAccountsByBalance", req.model_dump(exclude_none=True))
-        return [AccountBalance(**r) for r in resp]
+        burns = JettonBurnList(**resp)
+        return burns.jetton_burns
 
     async def get_account(self, req: GetAccountRequest) -> Account:
         resp = await self._async_get("account", req.model_dump(exclude_none=True))
@@ -281,7 +305,7 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
             retry = retry - 1 if retry is not None else None
             _timer_start = time.monotonic()
             try:
-                msgs = await self.get_transaction_by_message(
+                msgs, _ = await self.get_transaction_by_message(
                     GetTransactionByMessageRequest(
                         direction="in",
                         msg_hash=req.msg_hash,
@@ -312,7 +336,7 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
 
         while True:
             _timer_start = time.monotonic()
-            txs = await self.get_transactions(
+            txs, _ = await self.get_transactions(
                 GetTransactionsRequest(
                     account=req.account,
                     start_utime=req.start_time,
@@ -352,7 +376,7 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
             """
             current_tx = orig_tx
             while current_tx.in_msg.source is not None:
-                candidates = await self.get_adjacent_transactions(
+                candidates, _ = await self.get_adjacent_transactions(
                     GetAdjacentTransactionsRequest(
                         hash=current_tx.hash,
                         direction="in",
@@ -365,11 +389,11 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
             return current_tx
 
         async def _dfs_trace(root: Transaction, trace_id: str) -> List[TransactionTrace]:
-            next_txs = await self.get_adjacent_transactions(GetAdjacentTransactionsRequest(hash=root.hash, direction="out", limit=256, sort=req.sort, full=True))
+            next_txs, _ = await self.get_adjacent_transactions(GetAdjacentTransactionsRequest(hash=root.hash, direction="out", limit=256, sort=req.sort, full=True))
             results = await self.multicall([_dfs_trace(tx, trace_id) for tx in next_txs])
             return [TransactionTrace(id=tx.hash, transaction=tx, children=results[i]) for i, tx in enumerate(next_txs)]
 
-        orig_tx = await self.get_transactions(GetTransactionByHashRequest(hash=req.hash))
+        orig_tx, _ = await self.get_transactions(GetTransactionByHashRequest(hash=req.hash))
         assert orig_tx is not None, f"The original transaction {req.hash} does not exist"
         source_tx = await _trace_source(orig_tx=orig_tx)
         children = await _dfs_trace(source_tx, source_tx.hash)

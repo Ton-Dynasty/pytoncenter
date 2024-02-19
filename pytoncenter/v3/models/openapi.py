@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, model_serializer
+from pydantic import BaseModel, Field, field_validator, model_serializer
 
 from .types import AddressLike
 
@@ -60,6 +60,18 @@ class JettonBurn(BaseModel):
     custom_payload: Optional[str] = Field(..., title="Custom Payload")
 
 
+class JettonBurnList(BaseModel):
+    jetton_burns: List[JettonBurn] = Field(..., title="Jetton Burns")
+
+
+class AddressBookEntry(BaseModel):
+    user_friendly: str = Field(..., title="User Friendly")
+
+
+class AddressBook(BaseModel):
+    data: Dict[str, AddressBookEntry] = Field(default={}, title="Data")
+
+
 class JettonContent(BaseModel):
     uri: Optional[str] = Field(None, description="A URI pointing to JSON document with metadata. Used by 'Semi-chain content layout'. ASCII string.")
     name: Optional[str] = Field(None, description="The name of the token - e.g. 'Example Coin'. UTF8 string.")
@@ -95,6 +107,10 @@ class JettonMaster(BaseModel):
     data_hash: str = Field(..., title="Data Hash")
 
 
+class JettonMasterList(BaseModel):
+    jetton_masters: List[JettonMaster] = Field(..., title="Jetton Masters")
+
+
 class JettonTransfer(BaseModel):
     query_id: int = Field(..., title="Query Id")
     source: AddressLike = Field(..., title="Source")
@@ -111,6 +127,10 @@ class JettonTransfer(BaseModel):
     forward_payload: Optional[str] = Field(..., title="Forward Payload")
 
 
+class JettonTransferList(BaseModel):
+    jetton_transfers: List[JettonTransfer] = Field(..., title="Jetton Transfers")
+
+
 class JettonWallet(BaseModel):
     address: AddressLike = Field(..., title="Address")
     balance: int = Field(..., title="Balance")
@@ -119,6 +139,10 @@ class JettonWallet(BaseModel):
     last_transaction_lt: int = Field(..., title="Last Transaction Lt")
     code_hash: str = Field(..., title="Code Hash")
     data_hash: str = Field(..., title="Data Hash")
+
+
+class JettonWalletList(BaseModel):
+    jetton_wallets: List[JettonWallet] = Field(..., title="Jetton Wallets")
 
 
 class MessageInitState(BaseModel):
@@ -144,6 +168,10 @@ class NFTCollection(BaseModel):
     data_hash: str = Field(..., title="Data Hash")
 
 
+class NFTCollectionList(BaseModel):
+    nft_collections: List[NFTCollection] = Field(..., title="Nft Collections")
+
+
 class NFTItem(BaseModel):
     address: AddressLike = Field(..., title="Address")
     collection_address: Optional[AddressLike] = Field(..., title="Collection Address")
@@ -155,6 +183,10 @@ class NFTItem(BaseModel):
     data_hash: str = Field(..., title="Data Hash")
     content: Optional[NFTMetadata] = Field(default=None, title="Content")
     collection: Optional[NFTCollection]
+
+
+class NFTItemList(BaseModel):
+    nft_items: List[NFTItem] = Field(..., title="Nft Items")
 
 
 class NFTTransfer(BaseModel):
@@ -169,6 +201,10 @@ class NFTTransfer(BaseModel):
     custom_payload: Optional[str] = Field(..., title="Custom Payload")
     forward_amount: int = Field(..., title="Forward Amount")
     forward_payload: Optional[str] = Field(..., title="Forward Payload")
+
+
+class NFTTransferList(BaseModel):
+    nft_transfers: List[NFTTransfer] = Field(..., title="Nft Transfers")
 
 
 class SentMessage(BaseModel):
@@ -207,18 +243,25 @@ class Account(BaseModel):
     data: Optional[str] = Field(..., title="Data")
     last_transaction_lt: Optional[int] = Field(..., title="Last Transaction Lt")
     last_transaction_hash: Optional[str] = Field(..., title="Last Transaction Hash")
-    frozen_hash: Optional[str] = Field(..., title="Frozen Hash")
+    frozen_hash: Optional[str] = Field(default=None, title="Frozen Hash")
     status: Literal["uninit", "frozen", "active", "nonexist"] = Field(..., title="Status")
 
 
 class AccountState(BaseModel):
     hash: str = Field(..., title="Hash")
-    account: AddressLike = Field(..., title="Account")
-    balance: int = Field(..., title="Balance")
+    balance: int = Field(default=0, title="Balance")
     account_status: Literal["uninit", "frozen", "active", "nonexist"] = Field(..., title="Account Status")
-    frozen_hash: Optional[str] = Field(..., title="Frozen Hash")
+    frozen_hash: Optional[str] = Field(default=None, title="Frozen Hash")
     code_hash: Optional[str] = Field(..., title="Code Hash")
     data_hash: Optional[str] = Field(..., title="Data Hash")
+
+    @field_validator("account_status", mode="before")
+    def set_account_status(cls, v):
+        return v or "nonexist"
+
+    @field_validator("balance", mode="before")
+    def set_balance(cls, v):
+        return int(v or "0")
 
 
 class Block(BaseModel):
@@ -232,11 +275,12 @@ class Block(BaseModel):
     after_merge: bool = Field(..., title="After Merge")
     before_split: bool = Field(..., title="Before Split")
     after_split: bool = Field(..., title="After Split")
+    want_merge: bool = Field(..., title="Want Merge")
     want_split: bool = Field(..., title="Want Split")
     key_block: bool = Field(..., title="Key Block")
     vert_seqno_incr: bool = Field(..., title="Vert Seqno Incr")
     flags: int = Field(..., title="Flags")
-    gen_utime: str = Field(..., title="Gen Utime")
+    gen_utime: int = Field(..., title="Gen Utime")
     start_lt: int = Field(..., title="Start Lt")
     end_lt: int = Field(..., title="End Lt")
     validator_list_hash_short: int = Field(..., title="Validator List Hash Short")
@@ -249,6 +293,11 @@ class Block(BaseModel):
     created_by: str = Field(..., title="Created By")
     tx_count: Optional[int] = Field(..., title="Tx Count")
     masterchain_block_ref: Optional[BlockReference]
+    prev_blocks: List[BlockReference] = Field(..., title="Prev Blocks")
+
+
+class BlockList(BaseModel):
+    blocks: List[Block] = Field(..., title="Blocks")
 
 
 class EstimateFeeResponse(BaseModel):
@@ -306,9 +355,7 @@ class RunGetMethodResponse(BaseModel):
 class Message(BaseModel):
     hash: str = Field(..., title="Hash")
     source: Optional[str] = Field(..., title="Source")
-    source_friendly: Optional[AddressLike] = Field(..., title="Source Friendly")
     destination: Optional[str] = Field(..., title="Destination")
-    destination_friendly: Optional[AddressLike] = Field(..., title="Destination Friendly")
     value: Optional[int] = Field(..., title="Value")
     fwd_fee: Optional[int] = Field(..., title="Fwd Fee")
     ihr_fee: Optional[int] = Field(..., title="Ihr Fee")
@@ -323,17 +370,18 @@ class Message(BaseModel):
     init_state: Optional[MessageInitState]
 
 
+class MessageList(BaseModel):
+    messages: List[Message] = Field(..., title="Messages")
+
+
 class Transaction(BaseModel):
     account: AddressLike = Field(..., title="Account")
-    account_friendly: AddressLike = Field(..., title="Account Friendly")
     hash: str = Field(..., title="Hash")
     lt: int = Field(..., title="Lt")
     now: int = Field(..., title="Now")
     orig_status: Literal["uninit", "frozen", "active", "nonexist"] = Field(..., title="Orig Status")
     end_status: Literal["uninit", "frozen", "active", "nonexist"] = Field(..., title="End Status")
     total_fees: int = Field(..., title="Total Fees")
-    account_state_hash_before: str = Field(..., title="Account State Hash Before")
-    account_state_hash_after: str = Field(..., title="Account State Hash After")
     prev_trans_hash: str = Field(..., title="Prev Trans Hash")
     prev_trans_lt: int = Field(..., title="Prev Trans Lt")
     description: Any = Field(..., title="Description")
@@ -342,7 +390,12 @@ class Transaction(BaseModel):
     out_msgs: List[Message] = Field(..., title="Out Msgs")
     account_state_before: Optional[AccountState]
     account_state_after: Optional[AccountState]
-    trace_id: Optional[str] = Field(..., title="Trace Id")
+    mc_block_seqno: Optional[int] = Field(..., title="Mc Block Seqno")
+
+
+class TransactionList(BaseModel):
+    transactions: List[Transaction] = Field(default=[], title="Transactions")
+    address_book: Dict[str, AddressBookEntry] = Field(default={}, title="Address Book")
 
 
 class TransactionTrace(BaseModel):

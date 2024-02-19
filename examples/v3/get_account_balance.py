@@ -15,7 +15,7 @@ async def main():
     print("=== Jetton Wallets ===")
     for wallet in jetton_wallets:
         jetton = masters.get(wallet.address, None)
-        if jetton is None:
+        if jetton is None or jetton.jetton_content is None:
             continue
         content = jetton.jetton_content
         symbol = content.symbol if content else "unknown"
