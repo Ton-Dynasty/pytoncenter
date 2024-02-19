@@ -9,6 +9,8 @@ from .types import AddressLike, PyDatetime
 __all__ = [
     "GetBlockRequest",
     "GetMasterchainBlockShardsRequest",
+    "GetMasterchainBlockShardStateRequest",
+    "GetAddressBookRequest",
     "GetTransactionsRequest",
     "GetTransactionByMasterchainBlockRequest",
     "GetTransactionByMessageRequest",
@@ -75,6 +77,14 @@ class GetBlockRequest(BaseModel):
 class GetMasterchainBlockShardsRequest(BaseModel):
     seqno: int = Field(description="Masterchain block seqno")
     include_mc_block: bool = Field(False, description="Include masterchain block")
+
+
+class GetMasterchainBlockShardStateRequest(BaseModel):
+    seqno: int = Field(description="Masterchain block seqno")
+
+
+class GetAddressBookRequest(BaseModel):
+    address: List[AddressLike] = Field(default=[], max_length=1024, description="List of addresses in any form. Max: 1024")
 
 
 class GetTransactionByHashRequest(BaseModel):

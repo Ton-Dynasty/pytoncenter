@@ -1,7 +1,7 @@
 # Pytoncenter
 [![codecov](https://codecov.io/gh/Ton-Dynasty/pytoncenter/graph/badge.svg?token=EjDfnQmBiE)](https://codecov.io/gh/Ton-Dynasty/pytoncenter)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pytoncenter?style=flat)
-![GitHub Repo stars](https://img.shields.io/github/stars/alan890104/pytoncenter?style=flat)
+![GitHub Repo stars](https://img.shields.io/github/stars/Ton-Dynasty/pytoncenter?style=flat)
 
 
 ## Introduction
