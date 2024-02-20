@@ -35,6 +35,8 @@ __all__ = [
     "GetSourceTransactionRequest",
     "SubscribeTransactionRequest",
     "WaitMessageExistsRequest",
+    "GetDNSRecordRequest",
+    "DNSRecord",
 ]
 
 
@@ -315,3 +317,13 @@ class GetAccountRequest(BaseModel):
 
 class GetWalletRequest(BaseModel):
     address: AddressLike = Field(description="Account address. Account address. Can be sent in raw or user-friendly form")
+
+
+class GetDNSRecordRequest(BaseModel):
+    dns_name: str = Field(description="DNS name")
+    category: Optional[Literal["wallet"]] = Field(default="wallet", description="DNS category")
+
+
+class DNSRecord(BaseModel):
+    subdomain_bits: int = Field(description="Subdomain bits, for example doge.ton contains 32 bits (4 words)")
+    address: Optional[AddressLike] = Field(description="Address of the wallet")

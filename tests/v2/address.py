@@ -1,4 +1,7 @@
+from typing import Union
+
 import pytest
+
 from pytoncenter.address import Address
 from pytoncenter.v2.api import AsyncTonCenterClientV2
 
@@ -21,6 +24,17 @@ class TestAddress:
     )
     def test_address_conversion(self, addr1: str, addr2: str, match: bool):
         assert (Address(addr1) == Address(addr2)) == match
+
+    @pytest.mark.parametrize(
+        ("addr1", "addr2", "match"),
+        [
+            (Address("0:2b790db779a6e344ee6094b09b859e0ac50f523888edc3678cd8fb845d784865"), "kQAreQ23eabjRO5glLCbhZ4KxQ9SOIjtw2eM2PuEXXhIZeh3", True),
+            ("kQAreQ23eabjRO5glLCbhZ4KxQ9SOIjtw2eM2PuEXXhIZeh3", Address("0QAreQ23eabjRO5glLCbhZ4KxQ9SOIjtw2eM2PuEXXhIZbWy"), True),
+            (Address("kQAreQ23eabjRO5glLCbhZ4KxQ9SOIjtw2eM2PuEXXhIZeh3"), "EQCpk40ub48fvx89vSUjOTRy0vOEEZ4crOPPfLEvg88q1PwN", False),
+        ],
+    )
+    def test_address_compare_eq(self, addr1: Union[str, Address], addr2: Union[str, Address], match: bool):
+        assert (addr1 == addr2) == match
 
     @pytest.mark.parametrize(
         ("addr", "form"),

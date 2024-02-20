@@ -1,10 +1,12 @@
 import asyncio
+import hashlib
 import os
 import time
 import warnings
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union, overload
 
 import aiohttp
+from tonpy import CellSlice, begin_cell
 
 from pytoncenter.address import Address
 from pytoncenter.exception import TonCenterException, TonCenterValidationException
@@ -23,6 +25,8 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         qps: Optional[float] = None,
         **kwargs,
     ) -> None:
+        self._network = network
+
         api_key = os.getenv("TONCENTER_API_KEY", api_key)
         # show warning if api_key is None
         if not api_key:
@@ -294,6 +298,48 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
     async def estimate_fee(self, req: EstimateFeeRequest) -> EstimateFeeResponse:
         resp = await self._async_post("estimateFee", req.model_dump(exclude_none=True))
         return EstimateFeeResponse(**resp)
+
+    async def get_dns_record(self, req: GetDNSRecordRequest) -> DNSRecord:
+        """
+        get_dns_record returns the DNS record for the given domain name and category.
+        Only mainnet is supported.
+        Only the wallet category is supported at the moment.
+        """
+        assert self._network == "mainnet", "Only mainnet is supported"
+        dns_name = req.dns_name.replace(".", "\0")
+        dns_slice = begin_cell().store_string(dns_name).end_cell().to_boc()
+        category_hash = 0
+        if req.category is not None:
+            category_hash = int(hashlib.sha256(req.category.encode()).hexdigest(), 16)
+        resp = await self.run_get_method(
+            RunGetMethodRequest(
+                address="EQC3dNlesgVD8YbAazcauIrXBPfiVhMMr5YYk2in0Mtsz0Bz",
+                method="dnsresolve",
+                stack=[
+                    GetMethodParameterInput(type="slice", value=dns_slice),
+                    GetMethodParameterInput(type="num", value=category_hash),
+                ],
+            )
+        )
+        # We cannot import decoder here because it will cause circular import
+        # Thus we need to handle the decoding here
+        # It might be dirty, will find a better way to handle this
+        assert len(resp.stack) == 2, "Expecting to find two items in the stack"
+        assert resp.stack[0].type == "num", "Expecting the first item to be a number"
+        assert resp.stack[1].type == "cell", "Expecting the second item to be a cell"
+        subdomain_bits = int(resp.stack[0].value, 16)  # type: ignore
+        cs = CellSlice(resp.stack[1].value)  # type: ignore
+        if req.category == "wallet":
+            _ = cs.load_uint(16)  # opcode
+            try:
+                address = cs.load_address()
+            except:
+                address = None
+            return DNSRecord(
+                subdomain_bits=subdomain_bits,
+                address=address,
+            )
+        raise NotImplementedError(f"Decoding {req.category} category is not implemented yet")
 
     async def wait_message_exists(self, req: WaitMessageExistsRequest):
         """

@@ -228,9 +228,11 @@ class Address:
         return self.to_string(True, True, True, is_test_only=False)
 
     def __eq__(self, __value: object) -> bool:
-        if not isinstance(__value, Address):
-            return False
-        return self.to_string(True, True, True, is_test_only=False) == __value.to_string(True, True, True, is_test_only=False)
+        if isinstance(__value, Address):
+            return self.to_string(True, True, True, is_test_only=False) == __value.to_string(True, True, True, is_test_only=False)
+        if isinstance(__value, str):
+            return self.to_string(True, True, True, is_test_only=False) == Address(__value).to_string(True, True, True, is_test_only=False)
+        return False
 
     def __repr__(self) -> str:
         return self.to_string(True, True, True, is_test_only=False)
