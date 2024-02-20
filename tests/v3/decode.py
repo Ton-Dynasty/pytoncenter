@@ -1,8 +1,11 @@
+import asyncio
+
 import pytest
-from pytoncenter import get_client, AsyncTonCenterClientV3
+
+from pytoncenter import AsyncTonCenterClientV3, get_client
 from pytoncenter.address import Address
-from pytoncenter.decoder import JettonDataDecoder, Types, Decoder, AutoDecoder
-from pytoncenter.v3.models import RunGetMethodRequest
+from pytoncenter.decoder import AutoDecoder, Decoder, JettonDataDecoder, Types
+from pytoncenter.v3.models import GetDNSRecordRequest, RunGetMethodRequest
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -55,3 +58,16 @@ class TestDecoder:
         assert output["idx_2"] == 9
         assert output["idx_7"] == -1  # True, because auto decoder does not know the type of the field
         assert output["idx_4"] == 1000000000
+
+    @pytest.mark.asyncio
+    async def test_get_dns_record(self):
+        await asyncio.sleep(0.5)
+        client = get_client(version="v3", network="mainnet", api_key="")
+        dns_name = "doge.ton"
+        record = await client.get_dns_record(
+            GetDNSRecordRequest(
+                dns_name=dns_name,
+                category="wallet",
+            )
+        )
+        assert record.address == Address("EQDVjQWmoS6xrPqPJ5vEFBPZdBnY075ydcoEEqpVWjJXZ9RE")
