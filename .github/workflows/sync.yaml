@@ -1,9 +1,17 @@
 name: poetry export requirements.txt
 
 on:
-  pull_request:
   push:
     branches: [main]
+    paths-ignore:
+      - "requirements.txt"
+      - "poetry.lock"
+      - "*.md"
+      - "docs/**"
+      - ".env.example"
+      - "LICENSE"
+      - "Makefile"
+      - ".gitignore"
 
 permissions:
   contents: write
