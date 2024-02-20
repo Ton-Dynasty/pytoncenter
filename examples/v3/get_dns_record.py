@@ -1,5 +1,4 @@
 import asyncio
-import os
 
 from pytoncenter import get_client
 from pytoncenter.v3.models import *
@@ -8,8 +7,7 @@ from pytoncenter.v3.models import *
 async def main():
     # DNS only supports mainnet, so you have to use mainnet api key here
     # We set it to empty string to request without api key
-    os.environ["TONCENTER_API_KEY"] = ""
-    client = get_client(version="v3", network="mainnet")
+    client = get_client(version="v3", network="mainnet", api_key="")
     dns_name = "doge.ton"
     record = await client.get_dns_record(
         GetDNSRecordRequest(

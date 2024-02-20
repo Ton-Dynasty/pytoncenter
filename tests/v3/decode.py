@@ -1,4 +1,4 @@
-import os
+import asyncio
 
 import pytest
 
@@ -61,8 +61,8 @@ class TestDecoder:
 
     @pytest.mark.asyncio
     async def test_get_dns_record(self):
-        os.environ["TONCENTER_API_KEY"] = ""
-        client = get_client(version="v3", network="mainnet")
+        await asyncio.sleep(0.5)
+        client = get_client(version="v3", network="mainnet", api_key="")
         dns_name = "doge.ton"
         record = await client.get_dns_record(
             GetDNSRecordRequest(

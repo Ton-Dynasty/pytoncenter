@@ -25,9 +25,25 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         qps: Optional[float] = None,
         **kwargs,
     ) -> None:
-        self._network = network
+        """
+        Parameters
+        ----------
+        network : Union[Literal["mainnet"], Literal["testnet"]]
+            The network to use. Only mainnet and testnet are supported.
 
-        api_key = os.getenv("TONCENTER_API_KEY", api_key)
+        api_key : Optional[str], optional
+            The API key to use, by default None. If api_key is an empty string, then it will override the environment variable `TONCENTER_API_KEY`.
+        custom_endpoint : Optional[str], optional
+            The custom endpoint to use. If provided, it will override the network parameter.
+        qps: Optional[float], optional
+            The maximum queries per second to use. If not provided, it will use 9.5 if api_key is provided, otherwise 1.
+        """
+        self._network = network
+        if api_key is not None:
+            assert isinstance(api_key, str), "API key must be a string"
+            self.api_key = api_key
+        else:
+            self.api_key = os.getenv("TONCENTER_API_KEY", None)
         # show warning if api_key is None
         if not api_key:
             warnings.warn(
@@ -40,7 +56,6 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         else:
             prefix = "" if network == "mainnet" else "testnet."
             self.base_url = f"https://{prefix}toncenter.com/api/v3"
-        self.api_key = api_key
 
         if qps is not None:
             assert qps > 0, "QPS must be greater than 0"
