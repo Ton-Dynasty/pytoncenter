@@ -1,0 +1,26 @@
+name: poetry export requirements.txt
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  export-requirements-txt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: divideprojects/poetry-export-requirements-action@v1
+        with:
+          without-hashes: true
+          outfile-name: requirements.txt
+      - name: Commit report
+        run: |
+          git config --global user.name 'alan890104'
+          git config --global user.email 'alan890104@users.noreply.github.com'
+          git add requirements.txt
+          git commit -am "Sync requirements.txt from poetry.lock"
+          git push
