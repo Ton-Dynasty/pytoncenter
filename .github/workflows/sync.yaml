@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: divideprojects/poetry-export-requirements-action@v1
         with:
-          without-hashes: true
+          without-hashes: false
           outfile-name: requirements.txt
       - name: Commit report
         run: |

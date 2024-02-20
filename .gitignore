@@ -63,3 +63,5 @@ venv.bak/
 
 # Demo
 *.json
+
+!requirements.txt
