@@ -18,9 +18,9 @@ class TestDecoder:
         # test not throwing exceptions
         info = await client.get_masterchain_info()
         assert not isinstance(info, Exception)
-        state = client.get_masterchain_block_shard_state(GetMasterchainBlockShardStateRequest(seqno=10))
+        state = await client.get_masterchain_block_shard_state(GetMasterchainBlockShardStateRequest(seqno=10))
         assert not isinstance(state, Exception)
-        shards = client.get_masterchain_block_shards(GetMasterchainBlockShardsRequest(seqno=10, include_mc_block=True))
+        shards = await client.get_masterchain_block_shards(GetMasterchainBlockShardsRequest(seqno=10, include_mc_block=True))
         assert not isinstance(shards, Exception)
 
     @pytest.mark.asyncio

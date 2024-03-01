@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 import aiohttp
 from tonpy import Cell
 
+from pytoncenter.dispatcher import RoundRobinKeyRotator
 from pytoncenter.exception import TonException
 from pytoncenter.multicall import Multicallable
 from pytoncenter.requestor import AsyncRequestor
@@ -20,29 +21,52 @@ class AsyncTonCenterClientV2(Multicallable, AsyncRequestor):
         network: Union[Literal["mainnet"], Literal["testnet"]],
         *,
         api_key: Optional[str] = None,
+        strategy: Union[Literal["round_robin"], None] = None,
         custom_endpoint: Optional[str] = None,
         qps: Optional[float] = None,
         **kwargs,
     ) -> None:
-        api_key = os.getenv("TONCENTER_API_KEY", api_key)
+
+        self.api_keys = None
+        if isinstance(api_key, str):
+            if api_key != "":
+                self.api_keys = api_key.split(",")
+        elif isinstance(api_key, list) and len(api_key) > 0:
+            self.api_keys = api_key
+        else:
+            _api_key = os.getenv("TONCENTER_API_KEY", None)
+            if _api_key is not None:
+                self.api_keys = _api_key.split(",")
+
         # show warning if api_key is None
-        if not api_key:
+        if not self.api_keys:
             warnings.warn(
                 "API key is not provided. TonCenter API is rate limited to 1 request per second. Suggesting providing it in environment variable `TONCENTER_API_KEY` or api_key to increase the rate limit.",
                 RuntimeWarning,
             )
+
+        # Key rotation
+        self.rotator = None
+        if strategy is None:
+            if self.api_keys is not None and len(self.api_keys) > 1:
+                self.rotator = RoundRobinKeyRotator(keys=self.api_keys)
+        elif strategy == "round_robin":
+            self.rotator = RoundRobinKeyRotator(keys=self.api_keys)  # type: ignore
+        else:
+            raise ValueError(f"Strategy {strategy} is not supported")
+
         assert (network in ["mainnet", "testnet"]) or (custom_endpoint is not None), "Network or custom_endpoint must be provided"
         if custom_endpoint is not None:
             self.base_url = custom_endpoint
         else:
             prefix = "" if network == "mainnet" else "testnet."
             self.base_url = f"https://{prefix}toncenter.com/api/v2"
-        self.api_key = api_key
 
+        # QPS
         if qps is not None:
             assert qps > 0, "QPS must be greater than 0"
         else:
-            qps = 9.5 if self.api_key else 1
+            qps = 9.5 * len(self.api_keys) if self.api_keys else 1
         super().__init__(qps)
 
     def _get_request_headers(self) -> Dict[str, Any]:
@@ -50,8 +74,14 @@ class AsyncTonCenterClientV2(Multicallable, AsyncRequestor):
             "Content-Type": "application/json",
             "accept": "application/json",
         }
-        if self.api_key:
-            headers["X-API-KEY"] = self.api_key
+        _api_key = None
+        if self.rotator is not None:
+            _api_key = self.rotator.get_key()
+        else:
+            if self.api_keys is not None:
+                _api_key = self.api_keys[0]
+        if _api_key:
+            headers["X-API-KEY"] = _api_key
         return headers
 
     async def _parse_response(self, response: aiohttp.ClientResponse):
@@ -210,7 +240,7 @@ class AsyncTonCenterClientV2(Multicallable, AsyncRequestor):
         limit: Optional[int] = None,
         begin_lt: Optional[int] = None,
         hash: Optional[str] = None,
-        archival: bool = False,
+        archival: bool = True,
     ) -> List[Tx]:
         """
         get_transactions returns the transactions of the address in descending order of logical time
@@ -238,7 +268,7 @@ class AsyncTonCenterClientV2(Multicallable, AsyncRequestor):
                 "lt": begin_lt,
                 "hash": hash,
                 "to_lt": latest_lt,
-                "archival": int(archival),
+                "archival": "false" if not archival else "true",
             },
         )
 
@@ -345,7 +375,7 @@ class AsyncTonCenterClientV2(Multicallable, AsyncRequestor):
             try:
                 if cur_lt is not None:
                     await asyncio.sleep(interval_in_second)
-                results = await self.get_transactions(address, limit=limit, latest_lt=cur_lt, archival=False)
+                results = await self.get_transactions(address, limit=limit, latest_lt=cur_lt)
                 if not results:
                     continue
 

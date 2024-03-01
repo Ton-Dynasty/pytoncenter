@@ -1,5 +1,6 @@
-from pytoncenter.address import Address
 import asyncio
+
+from pytoncenter.address import Address
 from pytoncenter.v2.api import AsyncTonCenterClientV2
 
 
@@ -14,7 +15,7 @@ async def main():
     test_address_str = bounceable_address_str_url
     addr = Address(test_address_str)
 
-    client = AsyncTonCenterClientV2(network="mainnet")
+    client = AsyncTonCenterClientV2(network="testnet")
     result = await client.detect_address(test_address_str)
     print("From detect_address:")
     print(f"Raw Form: {result['raw_form']}")

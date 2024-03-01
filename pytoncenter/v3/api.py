@@ -9,6 +9,7 @@ import aiohttp
 from tonpy import CellSlice, begin_cell
 
 from pytoncenter.address import Address
+from pytoncenter.dispatcher import RoundRobinKeyRotator
 from pytoncenter.exception import TonCenterException, TonCenterValidationException
 from pytoncenter.multicall import Multicallable
 from pytoncenter.requestor import AsyncRequestor
@@ -20,7 +21,8 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
         self,
         network: Union[Literal["mainnet"], Literal["testnet"]],
         *,
-        api_key: Optional[str] = None,
+        api_key: Union[None, str, List[str]] = None,
+        strategy: Union[Literal["round_robin"], None] = None,
         custom_endpoint: Optional[str] = None,
         qps: Optional[float] = None,
         **kwargs,
@@ -33,23 +35,47 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
 
         api_key : Optional[str], optional
             The API key to use, by default None. If api_key is an empty string, then it will override the environment variable `TONCENTER_API_KEY`.
+            - If api key is None, it will use the environment variable `TONCENTER_API_KEY`. You can provide in a comma separated string to use multiple keys.
+            - If api key is an empty string, it will not use any API key
+            - If api key is a string, it will use the provided API key
+            - If api key is a list of strings, it will use the round robin strategy to rotate the keys
+        strategy : Union[Literal["round_robin"], None], optional
+            The strategy to use for rotating the API keys. if len(api_key) > 1. round_robin will be used by default.
         custom_endpoint : Optional[str], optional
             The custom endpoint to use. If provided, it will override the network parameter.
         qps: Optional[float], optional
-            The maximum queries per second to use. If not provided, it will use 9.5 if api_key is provided, otherwise 1.
+            The maximum queries per second to use. If not provided, it will use 9.5 * len(api keys) if api_key is provided, otherwise 1.
         """
         self._network = network
-        if api_key is not None:
-            assert isinstance(api_key, str), "API key must be a string"
-            self.api_key = api_key
+        # API KEY
+        self.api_keys = None
+        if isinstance(api_key, str):
+            if api_key != "":
+                self.api_keys = api_key.split(",")
+        elif isinstance(api_key, list) and len(api_key) > 0:
+            self.api_keys = api_key
         else:
-            self.api_key = os.getenv("TONCENTER_API_KEY", None)
+            _api_key = os.getenv("TONCENTER_API_KEY", None)
+            if _api_key is not None:
+                self.api_keys = _api_key.split(",")
         # show warning if api_key is None
-        if not api_key:
+        if not self.api_keys:
             warnings.warn(
                 "API key is not provided. TonCenter API is rate limited to 1 request per second. Suggesting providing it in environment variable `TONCENTER_API_KEY` or api_key to increase the rate limit.",
                 RuntimeWarning,
             )
+
+        # Key rotation
+        self.rotator = None
+        if strategy is None:
+            if self.api_keys is not None and len(self.api_keys) > 1:
+                self.rotator = RoundRobinKeyRotator(keys=self.api_keys)
+        elif strategy == "round_robin":
+            self.rotator = RoundRobinKeyRotator(keys=self.api_keys)  # type: ignore
+        else:
+            raise ValueError(f"Strategy {strategy} is not supported")
+
+        # Network and custom endpoint
         assert (network in ["mainnet", "testnet"]) or (custom_endpoint is not None), "Network or custom_endpoint must be provided"
         if custom_endpoint is not None:
             self.base_url = custom_endpoint
@@ -57,10 +83,11 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
             prefix = "" if network == "mainnet" else "testnet."
             self.base_url = f"https://{prefix}toncenter.com/api/v3"
 
+        # QPS
         if qps is not None:
             assert qps > 0, "QPS must be greater than 0"
         else:
-            qps = 9.5 if self.api_key else 1
+            qps = 9.5 * len(self.api_keys) if self.api_keys else 1
         super().__init__(qps)
 
     def _get_request_headers(self) -> Dict[str, Any]:
@@ -68,8 +95,14 @@ class AsyncTonCenterClientV3(Multicallable, AsyncRequestor):
             "Content-Type": "application/json",
             "accept": "application/json",
         }
-        if self.api_key:
-            headers["X-API-KEY"] = self.api_key
+        _api_key = None
+        if self.rotator is not None:
+            _api_key = self.rotator.get_key()
+        else:
+            if self.api_keys is not None:
+                _api_key = self.api_keys[0]
+        if _api_key:
+            headers["X-API-KEY"] = _api_key
         return headers
 
     async def _parse_response(self, response: aiohttp.ClientResponse) -> Dict[str, Any]:
