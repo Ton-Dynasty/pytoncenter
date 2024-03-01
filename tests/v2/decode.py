@@ -10,8 +10,9 @@ pytest_plugins = ("pytest_asyncio",)
 class TestDecoder:
     client: AsyncTonCenterClientV2
 
-    def setup_method(self):
-        self.client = AsyncTonCenterClientV2(network="testnet")
+    @classmethod
+    def setup_class(cls):
+        cls.client = AsyncTonCenterClientV2(network="testnet")
 
     @pytest.mark.asyncio
     async def test_get_jetton_data(self):

@@ -11,8 +11,9 @@ pytest_plugins = ("pytest_asyncio",)
 class TestAddress:
     client: AsyncTonCenterClientV2
 
-    def setup_method(self):
-        self.client = AsyncTonCenterClientV2(network="testnet")
+    @classmethod
+    def setup_class(cls):
+        cls.client = AsyncTonCenterClientV2(network="testnet", api_key="")
 
     @pytest.mark.parametrize(
         ("addr1", "addr2", "match"),
