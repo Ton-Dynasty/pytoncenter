@@ -27,6 +27,10 @@ class AsyncRequestor:
         params: Optional[Dict[str, Any]] = None,
         payload: Optional[Dict[str, Any]] = None,
     ):
+        if params:
+            for k, v in params.items():
+                if isinstance(v, bool):
+                    params[k] = str(v).lower()
         async with self.limiter:
             async with aiohttp.ClientSession() as session:
                 async with session.request(method, url=url, headers=self._get_request_headers(), params=params, json=payload) as response:
