@@ -1,3 +1,4 @@
+import asyncio
 from typing import Union
 
 import pytest
@@ -46,6 +47,7 @@ class TestAddress:
     )
     @pytest.mark.asyncio
     async def test_address_match_api(self, addr: str, form: str):
+        await asyncio.sleep(0.5)
         result = await self.client.detect_address(addr)
         if form == "raw_form":
             assert result["raw_form"] == Address(addr).to_string(is_user_friendly=False)
